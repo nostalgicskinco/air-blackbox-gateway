@@ -1,0 +1,61 @@
+##
+## OTel Collector pipeline for AIR Blackbox Gateway.
+##
+## This config uses the contrib collector image out of the box.
+## To add your custom processors (genai_semantic_normalizer, prompt_vault, etc.),
+## build a custom collector with OCB — see ocb-config.yaml.
+##
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+  ## --- Uncomment these once you build a custom collector with your processors ---
+
+  # genai_semantic_normalizer:
+  #   # Normalizes vendor-specific attributes to gen_ai.* semantic conventions.
+  #   # Module: github.com/nostalgicskinco/genai-semantic-normalizer
+
+  # prompt_vault:
+  #   # Offloads prompt/response content to S3 and leaves vault references.
+  #   # Module: github.com/nostalgicskinco/prompt-vault-processor
+  #   storage:
+  #     type: s3
+  #     endpoint: minio:9000
+  #     bucket: prompt-vault
+  #     access_key: minioadmin
+  #     secret_key: minioadmin
+  #     use_ssl: false
+
+  # genai:
+  #   # Privacy redaction, token counting, loop detection.
+  #   # Module: github.com/nostalgicskinco/opentelemetry-collector-processor-genai
+  #   redact_pii: true
+  #   detect_loops: true
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      ## Full pipeline (once custom collector is built):
+      # processors: [genai_semantic_normalizer, prompt_vault, genai, batch]
+      exporters: [otlp/jaeger, debug]

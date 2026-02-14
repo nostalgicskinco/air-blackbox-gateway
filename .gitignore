@@ -1,0 +1,22 @@
+# Binaries (root-level only)
+/gateway
+/replayctl
+*.exe
+
+# Build output
+/collector/build/
+
+# Environment
+.env
+
+# AIR records (local dev)
+/runs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

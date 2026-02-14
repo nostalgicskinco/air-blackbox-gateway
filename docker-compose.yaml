@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  gateway:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LISTEN_ADDR=:8080
+      - PROVIDER_URL=https://api.openai.com
+      - VAULT_ENDPOINT=minio:9000
+      - VAULT_ACCESS_KEY=minioadmin
+      - VAULT_SECRET_KEY=minioadmin
+      - VAULT_BUCKET=air-runs
+      - VAULT_USE_SSL=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=collector:4317
+      - RUNS_DIR=/data/runs
+    volumes:
+      - runs:/data/runs
+    depends_on:
+      minio:
+        condition: service_started
+      collector:
+        condition: service_started
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio-data:/data
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    command: ["--config=/etc/otel/collector.yaml"]
+    ports:
+      - "4317:4317"   # gRPC OTLP
+      - "4318:4318"   # HTTP OTLP
+    volumes:
+      - ./collector/collector.yaml:/etc/otel/collector.yaml:ro
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  runs:
+  minio-data:

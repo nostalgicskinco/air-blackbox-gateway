@@ -1,9 +1,12 @@
 ##
 ## OTel Collector pipeline for AIR Blackbox Gateway.
 ##
-## This config uses the contrib collector image out of the box.
-## To add your custom processors (genai_semantic_normalizer, prompt_vault, etc.),
-## build a custom collector with OCB — see ocb-config.yaml.
+## This config requires the custom collector built with OCB (see ocb-config.yaml).
+## It wires the three AIR processors in order:
+##   1. genai_semantic_normalizer — normalize vendor attrs to gen_ai.*
+##   2. promptvault — offload content to storage, replace with vault refs
+##   3. genaisafe — PII redaction, loop detection, token metrics
+##   4. batch — standard batching before export
 ##
 
 receivers:
@@ -15,32 +18,53 @@ receivers:
         endpoint: 0.0.0.0:4318
 
 processors:
+  # Step 1: Normalize vendor-specific attributes to gen_ai.* semantic conventions.
+  genai_semantic_normalizer:
+    enable_defaults: true
+    overwrite: false
+    drop_original: false
+
+  # Step 2: Offload prompt/response content to filesystem vault.
+  promptvault:
+    storage:
+      backend: filesystem
+      filesystem:
+        base_path: /data/vault
+    vault:
+      keys:
+        - gen_ai.system_instructions
+        - gen_ai.input.messages
+        - gen_ai.output.messages
+        - gen_ai.prompt
+        - gen_ai.completion
+      size_threshold: 0
+      mode: replace_with_ref
+
+  # Step 3: PII redaction, token metrics, loop detection.
+  genaisafe:
+    redact:
+      mode: hash_and_preview
+      preview_chars: 48
+      salt: air-demo-salt
+      keys:
+        - gen_ai.prompt
+        - gen_ai.completion
+        - llm.prompt
+        - llm.completion
+      denylist_regex:
+        - "(?i)api[_-]?key"
+        - "(?i)authorization"
+        - "(?i)sk-[a-z0-9]{20,}"
+    metrics:
+      enable: true
+    loop_detection:
+      enable: true
+      repeat_threshold: 6
+
+  # Step 4: Standard batching before export.
   batch:
     timeout: 5s
     send_batch_size: 512
-
-  ## --- Uncomment these once you build a custom collector with your processors ---
-
-  # genai_semantic_normalizer:
-  #   # Normalizes vendor-specific attributes to gen_ai.* semantic conventions.
-  #   # Module: github.com/nostalgicskinco/genai-semantic-normalizer
-
-  # prompt_vault:
-  #   # Offloads prompt/response content to S3 and leaves vault references.
-  #   # Module: github.com/nostalgicskinco/prompt-vault-processor
-  #   storage:
-  #     type: s3
-  #     endpoint: minio:9000
-  #     bucket: prompt-vault
-  #     access_key: minioadmin
-  #     secret_key: minioadmin
-  #     use_ssl: false
-
-  # genai:
-  #   # Privacy redaction, token counting, loop detection.
-  #   # Module: github.com/nostalgicskinco/opentelemetry-collector-processor-genai
-  #   redact_pii: true
-  #   detect_loops: true
 
 exporters:
   otlp/jaeger:
@@ -55,7 +79,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      ## Full pipeline (once custom collector is built):
-      # processors: [genai_semantic_normalizer, prompt_vault, genai, batch]
+      processors: [genai_semantic_normalizer, promptvault, genaisafe, batch]
       exporters: [otlp/jaeger, debug]

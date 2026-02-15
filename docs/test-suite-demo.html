@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR Blackbox Gateway — Test Suite Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+    border-bottom: 1px solid #30363d;
+    padding: 32px 48px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .logo {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #58a6ff, #bc8cff);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; color: #fff;
+  }
+
+  .header-text h1 {
+    font-size: 24px; font-weight: 700; color: #f0f6fc;
+  }
+  .header-text p {
+    font-size: 14px; color: #8b949e; margin-top: 4px;
+  }
+
+  .stats-bar {
+    display: flex; gap: 24px; padding: 20px 48px;
+    background: #161b22; border-bottom: 1px solid #30363d;
+  }
+
+  .stat {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: #8b949e;
+  }
+  .stat .value { font-weight: 700; font-size: 20px; }
+  .stat.pass .value { color: #3fb950; }
+  .stat.pkgs .value { color: #58a6ff; }
+  .stat.time .value { color: #d2a8ff; }
+  .stat.providers .value { color: #f0883e; }
+
+  .terminal {
+    margin: 32px 48px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .terminal-bar {
+    background: #161b22;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #30363d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green { background: #28c840; }
+  .terminal-title {
+    margin-left: 8px; font-size: 13px; color: #8b949e;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .terminal-body {
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .cmd { color: #58a6ff; }
+  .prompt { color: #3fb950; }
+  .pass { color: #3fb950; }
+  .fail { color: #f85149; }
+  .skip { color: #8b949e; }
+  .pkg { color: #d2a8ff; }
+  .run { color: #8b949e; }
+  .log { color: #6e7681; }
+  .model { color: #f0883e; }
+  .time-val { color: #79c0ff; }
+  .dim { color: #484f58; }
+
+  .line {
+    opacity: 0;
+    animation: fadeIn 0.03s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  .section {
+    margin: 32px 48px;
+  }
+
+  .section h2 {
+    font-size: 18px; color: #f0f6fc; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .test-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .test-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .test-card:hover { border-color: #58a6ff; }
+
+  .test-card .name {
+    font-size: 13px; font-weight: 600; color: #f0f6fc;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .test-card .detail {
+    font-size: 12px; color: #8b949e; line-height: 1.5;
+  }
+  .test-card .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.pass-badge { background: #1a3a2a; color: #3fb950; }
+  .badge.provider-badge { background: #2a1f0e; color: #f0883e; }
+
+  .footer {
+    padding: 32px 48px;
+    border-top: 1px solid #30363d;
+    text-align: center;
+    color: #484f58;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">A</div>
+  <div class="header-text">
+    <h1>AIR Blackbox Gateway</h1>
+    <p>nostalgicskinco/air-blackbox-gateway &mdash; Test Suite Results</p>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat pass"><span class="value">30</span> tests passed</div>
+  <div class="stat pkgs"><span class="value">4</span> packages</div>
+  <div class="stat time"><span class="value">1.39s</span> total time</div>
+  <div class="stat providers"><span class="value">8</span> providers detected</div>
+</div>
+
+<div class="terminal">
+  <div class="terminal-bar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <span class="terminal-title">jasonshotwell@Mac ~/Projects/air-blackbox-gateway</span>
+  </div>
+  <div class="terminal-body" id="terminal"></div>
+</div>
+
+<div class="section">
+  <h2>&#x1f9ea; Golden Fixture Tests (10 scenarios)</h2>
+  <div class="test-grid">
+    <div class="test-card">
+      <div class="name">&#x2705; happy_path <span class="badge pass-badge">PASS</span></div>
+      <div class="detail">GPT-4o-mini &bull; 22 tokens &bull; Standard chat completion</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; tool_call_chain <span class="badge pass-badge">PASS</span></div>
+      <div class="detail">GPT-4o &bull; 107 tokens &bull; Multi-turn tool usage</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; sensitive_payload <span class="badge pass-badge">PASS</span></div>
+      <div class="detail">GPT-4o-mini &bull; 54 tokens &bull; PII content detected</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; huge_payload <span class="badge pass-badge">PASS</span></div>
+      <div class="detail">GPT-4o-mini &bull; 5003 tokens &bull; Large payload handling</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; mixed_providers <span class="badge provider-badge">Anthropic</span></div>
+      <div class="detail">claude-3-5-sonnet-20241022 &bull; 14 tokens</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; deepseek_chat <span class="badge provider-badge">DeepSeek</span></div>
+      <div class="detail">deepseek-chat &bull; 28 tokens</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; grok_xai <span class="badge provider-badge">xAI</span></div>
+      <div class="detail">grok-2 &bull; 18 tokens</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; qwen_alibaba <span class="badge provider-badge">Alibaba</span></div>
+      <div class="detail">qwen-turbo &bull; 16 tokens</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; runaway_loop <span class="badge pass-badge">PASS</span></div>
+      <div class="detail">GPT-4o &bull; 51 tokens &bull; Loop detection</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; malformed_request <span class="badge pass-badge">PASS</span></div>
+      <div class="detail">Error handling &bull; Graceful failure</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>&#x1f512; Security Tests</h2>
+  <div class="test-grid">
+    <div class="test-card">
+      <div class="name">&#x2705; NoPlaintextInAIRRecords</div>
+      <div class="detail">Verifies sensitive content is never stored in plaintext</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; AllFixturesNoContentLeak (10)</div>
+      <div class="detail">All 10 fixture scenarios checked for content leaks</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; AuthHeaderNotStored</div>
+      <div class="detail">API keys never persisted to AIR records</div>
+    </div>
+    <div class="test-card">
+      <div class="name">&#x2705; ConcurrentRequests (10)</div>
+      <div class="detail">10 parallel requests with no race conditions</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>&#x1f4e6; Package Coverage</h2>
+  <div class="test-grid">
+    <div class="test-card">
+      <div class="name">pkg/proxy <span class="badge pass-badge">0.44s</span></div>
+      <div class="detail">22 tests &bull; Golden fixtures, security, concurrency, auth</div>
+    </div>
+    <div class="test-card">
+      <div class="name">pkg/recorder <span class="badge pass-badge">0.14s</span></div>
+      <div class="detail">3 tests &bull; Write, load, directory creation</div>
+    </div>
+    <div class="test-card">
+      <div class="name">pkg/replay <span class="badge pass-badge">0.27s</span></div>
+      <div class="detail">3 tests &bull; Key extraction, content, token similarity</div>
+    </div>
+    <div class="test-card">
+      <div class="name">pkg/vault <span class="badge pass-badge">0.54s</span></div>
+      <div class="detail">2 tests &bull; Checksum verification, ref field resolution</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  nostalgicskinco &bull; AIR Blackbox Gateway &bull; Test run: February 15, 2026 &bull; Go 1.24 &bull; All 30 tests passing
+</div>
+
+<script>
+const lines = [
+  { type: 'prompt', text: '$ go test -v ./pkg/proxy/ ./pkg/recorder/ ./pkg/replay/ ./pkg/vault/' },
+  { type: 'blank' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/happy_path' },
+  { type: 'log', text: '[3ae81560] /v1/chat/completions model=<span class="model">gpt-4o-mini</span> tokens=22 status=success' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/tool_call_chain' },
+  { type: 'log', text: '[5d1e1ce5] /v1/chat/completions model=<span class="model">gpt-4o</span> tokens=107 status=success' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/sensitive_payload' },
+  { type: 'log', text: '[ba8c35eb] /v1/chat/completions model=<span class="model">gpt-4o-mini</span> tokens=54 status=success' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/deepseek_chat' },
+  { type: 'log', text: '[32f5ed43] /v1/chat/completions model=<span class="model">deepseek-chat</span> tokens=28 status=success' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/grok_xai' },
+  { type: 'log', text: '[a88bc1d0] /v1/chat/completions model=<span class="model">grok-2</span> tokens=18 status=success' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/qwen_alibaba' },
+  { type: 'log', text: '[03e20e66] /v1/chat/completions model=<span class="model">qwen-turbo</span> tokens=16 status=success' },
+  { type: 'run', text: '=== RUN   TestGoldenFixtures/malformed_request' },
+  { type: 'log', text: '[4604819a] /v1/chat/completions model=<span class="model"></span> tokens=0 status=error' },
+  { type: 'pass', text: '--- <span class="pass">PASS</span>: TestGoldenFixtures (0.01s)' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/happy_path' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/tool_call_chain' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/sensitive_payload' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/deepseek_chat' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/grok_xai' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/qwen_alibaba' },
+  { type: 'pass', text: '    --- <span class="pass">PASS</span>: TestGoldenFixtures/malformed_request' },
+  { type: 'blank' },
+  { type: 'run', text: '=== RUN   TestSecurity_NoPlaintextInAIRRecords' },
+  { type: 'pass', text: '--- <span class="pass">PASS</span>: TestSecurity_NoPlaintextInAIRRecords' },
+  { type: 'run', text: '=== RUN   TestSecurity_AllFixturesNoContentLeak' },
+  { type: 'pass', text: '--- <span class="pass">PASS</span>: TestSecurity_AllFixturesNoContentLeak (0.01s)' },
+  { type: 'run', text: '=== RUN   TestSecurity_AuthHeaderNotStored' },
+  { type: 'pass', text: '--- <span class="pass">PASS</span>: TestSecurity_AuthHeaderNotStored' },
+  { type: 'run', text: '=== RUN   TestFailureMode_ConcurrentRequests' },
+  { type: 'log', text: '  10 concurrent requests processed successfully' },
+  { type: 'pass', text: '--- <span class="pass">PASS</span>: TestFailureMode_ConcurrentRequests' },
+  { type: 'blank' },
+  { type: 'pass', text: '<span class="pass">PASS</span>' },
+  { type: 'pkg', text: 'ok  <span class="pkg">pkg/proxy</span>     <span class="time-val">0.439s</span>' },
+  { type: 'pkg', text: 'ok  <span class="pkg">pkg/recorder</span>  <span class="time-val">0.142s</span>' },
+  { type: 'pkg', text: 'ok  <span class="pkg">pkg/replay</span>    <span class="time-val">0.271s</span>' },
+  { type: 'pkg', text: 'ok  <span class="pkg">pkg/vault</span>     <span class="time-val">0.536s</span>' },
+  { type: 'blank' },
+  { type: 'prompt', text: '$ <span class="dim">_</span>' },
+];
+
+const terminal = document.getElementById('terminal');
+let delay = 200;
+
+lines.forEach((line, i) => {
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.style.animationDelay = delay + 'ms';
+
+  if (line.type === 'blank') {
+    div.innerHTML = '&nbsp;';
+  } else {
+    div.innerHTML = line.text;
+  }
+
+  terminal.appendChild(div);
+
+  if (line.type === 'prompt') delay += 800;
+  else if (line.type === 'pass') delay += 40;
+  else if (line.type === 'log') delay += 30;
+  else if (line.type === 'run') delay += 50;
+  else if (line.type === 'pkg') delay += 200;
+  else delay += 20;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="gw" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="proc" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="store" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <marker id="arrowAmber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#f59e0b"/></marker>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#3b82f6"/></marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#10b981"/></marker>
+    <marker id="arrowPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#7c3aed"/></marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="520" rx="12" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="450" y="38" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="700">AIR Blackbox Gateway — How It Works</text>
+  <text x="450" y="58" text-anchor="middle" fill="#94a3b8" font-size="12">A flight recorder for AI systems</text>
+
+  <!-- YOUR AGENT box -->
+  <rect x="30" y="90" width="140" height="70" rx="8" fill="#334155" filter="url(#shadow)"/>
+  <text x="100" y="120" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="600">Your Agent</text>
+  <text x="100" y="138" text-anchor="middle" fill="#94a3b8" font-size="10">any framework</text>
+
+  <!-- Arrow: Agent → Gateway -->
+  <line x1="170" y1="125" x2="220" y2="125" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arrowAmber)"/>
+
+  <!-- GATEWAY box -->
+  <rect x="225" y="78" width="200" height="96" rx="10" fill="url(#gw)" filter="url(#shadow)"/>
+  <text x="325" y="105" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">AIR Blackbox Gateway</text>
+  <text x="325" y="124" text-anchor="middle" fill="#fef3c7" font-size="10">assigns run_id</text>
+  <text x="325" y="138" text-anchor="middle" fill="#fef3c7" font-size="10">vaults content → MinIO</text>
+  <text x="325" y="152" text-anchor="middle" fill="#fef3c7" font-size="10">emits OTel spans</text>
+  <text x="325" y="166" text-anchor="middle" fill="#fef3c7" font-size="10">writes .air.json record</text>
+
+  <!-- Arrow: Gateway → LLM Provider -->
+  <line x1="425" y1="125" x2="475" y2="125" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arrowAmber)"/>
+
+  <!-- LLM PROVIDER box -->
+  <rect x="480" y="90" width="140" height="70" rx="8" fill="#334155" filter="url(#shadow)"/>
+  <text x="550" y="118" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="600">LLM Provider</text>
+  <text x="550" y="136" text-anchor="middle" fill="#94a3b8" font-size="10">OpenAI / Anthropic / etc</text>
+
+  <!-- Vertical arrow down from Gateway -->
+  <line x1="325" y1="174" x2="325" y2="220" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- OTel COLLECTOR pipeline -->
+  <rect x="100" y="225" width="620" height="100" rx="10" fill="#1e3a5f" filter="url(#shadow)" stroke="#3b82f6" stroke-width="1"/>
+  <text x="410" y="248" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="700">OTel Collector Pipeline</text>
+
+  <!-- Processor boxes -->
+  <rect x="120" y="260" width="130" height="50" rx="6" fill="url(#proc)"/>
+  <text x="185" y="282" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Normalize</text>
+  <text x="185" y="298" text-anchor="middle" fill="#bfdbfe" font-size="9">vendor-agnostic attrs</text>
+
+  <line x1="250" y1="285" x2="270" y2="285" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <rect x="275" y="260" width="130" height="50" rx="6" fill="url(#proc)"/>
+  <text x="340" y="282" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Vault</text>
+  <text x="340" y="298" text-anchor="middle" fill="#bfdbfe" font-size="9">content → references</text>
+
+  <line x1="405" y1="285" x2="425" y2="285" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <rect x="430" y="260" width="130" height="50" rx="6" fill="url(#proc)"/>
+  <text x="495" y="282" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Redact</text>
+  <text x="495" y="298" text-anchor="middle" fill="#bfdbfe" font-size="9">PII + token counting</text>
+
+  <line x1="560" y1="285" x2="580" y2="285" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <rect x="585" y="260" width="120" height="50" rx="6" fill="url(#proc)"/>
+  <text x="645" y="282" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Batch</text>
+  <text x="645" y="298" text-anchor="middle" fill="#bfdbfe" font-size="9">export grouping</text>
+
+  <!-- Arrows down from collector -->
+  <line x1="200" y1="325" x2="200" y2="370" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <line x1="410" y1="325" x2="410" y2="370" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <line x1="620" y1="325" x2="620" y2="370" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+
+  <!-- MinIO -->
+  <rect x="110" y="375" width="180" height="60" rx="8" fill="url(#store)" filter="url(#shadow)"/>
+  <text x="200" y="400" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">MinIO (Vault)</text>
+  <text x="200" y="418" text-anchor="middle" fill="#d1fae5" font-size="10">encrypted prompt/response</text>
+
+  <!-- AIR Records -->
+  <rect x="320" y="375" width="180" height="60" rx="8" fill="url(#store)" filter="url(#shadow)"/>
+  <text x="410" y="400" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">.air.json Records</text>
+  <text x="410" y="418" text-anchor="middle" fill="#d1fae5" font-size="10">tamper-evident audit trail</text>
+
+  <!-- Jaeger -->
+  <rect x="530" y="375" width="180" height="60" rx="8" fill="url(#store)" filter="url(#shadow)"/>
+  <text x="620" y="400" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Jaeger / Grafana</text>
+  <text x="620" y="418" text-anchor="middle" fill="#d1fae5" font-size="10">traces (no raw content)</text>
+
+  <!-- Replay box -->
+  <rect x="320" y="455" width="180" height="45" rx="8" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="410" y="475" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">replayctl replay</text>
+  <text x="410" y="490" text-anchor="middle" fill="#ddd6fe" font-size="10">deterministic replay + drift check</text>
+  <line x1="410" y1="435" x2="410" y2="455" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
+
+  <!-- Supported Providers key -->
+  <rect x="700" y="90" width="175" height="145" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <text x="787" y="112" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">Supported Providers</text>
+  <circle cx="720" cy="129" r="3" fill="#fbbf24"/><text x="730" y="132" fill="#cbd5e1" font-size="10">OpenAI / GPT</text>
+  <circle cx="720" cy="147" r="3" fill="#fbbf24"/><text x="730" y="150" fill="#cbd5e1" font-size="10">Anthropic / Claude</text>
+  <circle cx="720" cy="165" r="3" fill="#fbbf24"/><text x="730" y="168" fill="#cbd5e1" font-size="10">DeepSeek</text>
+  <circle cx="720" cy="183" r="3" fill="#fbbf24"/><text x="730" y="186" fill="#cbd5e1" font-size="10">xAI / Grok</text>
+  <circle cx="720" cy="201" r="3" fill="#fbbf24"/><text x="730" y="204" fill="#cbd5e1" font-size="10">Alibaba / Qwen</text>
+  <circle cx="720" cy="219" r="3" fill="#fbbf24"/><text x="730" y="222" fill="#cbd5e1" font-size="10">Any OpenAI-compatible</text>
+</svg>

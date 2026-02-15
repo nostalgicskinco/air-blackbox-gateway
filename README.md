@@ -11,30 +11,19 @@ When an autonomous agent sends an email, moves money, or changes data, someone w
 
 > **See it in action:** [Interactive Test Suite Demo](https://nostalgicskinco.github.io/air-blackbox-gateway/test-suite-demo.html) — 30 tests across 8 LLM providers, security validation, and concurrency checks.
 
+## Who Is This For?
+
+**ML / Platform Engineers** — You're deploying agents that call LLMs. You need every request and response recorded without leaking PII into your observability stack. Drop this in front of your provider and get vault-backed audit trails with zero code changes.
+
+**Compliance & Security Teams** — Your organization is shipping AI features and regulators are asking questions. You need tamper-evident records that prove exactly what the AI saw, what it decided, and when. AIR records give you legal-grade reconstruction with SHA-256 checksums.
+
+**Startup CTOs** — You're moving fast but know that "we can't prove what our AI did" will eventually become a blocker for enterprise deals, SOC2, or insurance. This is the infrastructure you install now so you're not scrambling later.
+
 ## How It Works
 
-```
-┌──────────────┐         ┌─────────────────────┐         ┌──────────────┐
-│  Your Agent  │────────▶│  AIR Blackbox GW    │────────▶│  OpenAI /    │
-│  (any framework)       │                     │         │  Anthropic   │
-└──────────────┘         │  • assigns run_id   │         └──────────────┘
-                         │  • vaults content   │
-                         │  • emits OTel spans │
-                         │  • writes AIR record│
-                         └─────────┬───────────┘
-                                   │
-                    ┌──────────────┼──────────────┐
-                    ▼              ▼              ▼
-              ┌──────────┐  ┌──────────┐  ┌──────────────┐
-              │  MinIO   │  │  OTel    │  │  runs/       │
-              │  (vault) │  │ Collector│  │  <id>.air.json│
-              └──────────┘  └────┬─────┘  └──────────────┘
-                                 │
-                          ┌──────┴──────┐
-                          │ Jaeger /    │
-                          │ Grafana     │
-                          └─────────────┘
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="AIR Blackbox Gateway Architecture" width="900"/>
+</p>
 
 1. Your agent sends an OpenAI-compatible request to the gateway (just change the base URL)
 2. The gateway assigns a `run_id`, forwards the request, captures the response

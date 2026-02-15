@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   gateway:
     build: .
@@ -42,13 +40,14 @@ services:
       start_period: 5s
 
   collector:
-    image: otel/opentelemetry-collector-contrib:0.104.0
-    command: ["--config=/etc/otel/collector.yaml"]
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
     ports:
       - "4317:4317"   # gRPC OTLP
       - "4318:4318"   # HTTP OTLP
     volumes:
-      - ./collector/collector.yaml:/etc/otel/collector.yaml:ro
+      - vault-data:/data/vault
     depends_on:
       - jaeger
 
@@ -63,3 +62,4 @@ services:
 volumes:
   runs:
   minio-data:
+  vault-data:

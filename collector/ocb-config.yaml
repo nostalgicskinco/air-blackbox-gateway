@@ -1,7 +1,7 @@
 ##
 ## OCB (OpenTelemetry Collector Builder) manifest.
 ##
-## Use this to build a custom collector that includes your processors.
+## Builds a custom collector with AIR processors baked in.
 ##
 ## Install OCB:
 ##   go install go.opentelemetry.io/collector/cmd/builder@v0.104.0
@@ -13,7 +13,7 @@
 dist:
   name: air-collector
   description: Custom OTel Collector for AIR Blackbox Gateway
-  output_path: ./collector/build
+  output_path: ./build
   otelcol_version: 0.104.0
 
 receivers:
@@ -22,15 +22,17 @@ receivers:
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.104.0
 
-  ## Your custom processors — update module paths if needed:
-  # - gomod: github.com/nostalgicskinco/genai-semantic-normalizer v0.1.0
-  # - gomod: github.com/nostalgicskinco/prompt-vault-processor v0.1.0
-  # - gomod: github.com/nostalgicskinco/opentelemetry-collector-processor-genai v0.1.0
+  # --- AIR custom processors ---
+  # gomod = root module (matches go.mod), import = sub-package with NewFactory()
+  - gomod: github.com/nostalgicskinco/genai-semantic-normalizer v0.1.0
+    import: github.com/nostalgicskinco/genai-semantic-normalizer/processor/genainormprocessor
+
+  - gomod: github.com/nostalgicskinco/prompt-vault-processor v0.1.0
+    import: github.com/nostalgicskinco/prompt-vault-processor/processor/promptvaultprocessor
+
+  - gomod: github.com/nostalgicskinco/opentelemetry-collector-processor-genai v0.1.0
+    import: github.com/nostalgicskinco/opentelemetry-collector-processor-genai/processor/genaisafeprocessor
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.104.0
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.104.0
-
-connectors:
-  ## Your cost/SLO connector:
-  # - gomod: github.com/nostalgicskinco/genai-cost-slo v0.1.0

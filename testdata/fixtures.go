@@ -204,6 +204,84 @@ func RunawayLoop() Fixture {
 	}
 }
 
+// DeepSeekChat returns a DeepSeek model request to test provider inference.
+func DeepSeekChat() Fixture {
+	return Fixture{
+		Name: "deepseek_chat",
+		RequestBody: `{
+			"model": "deepseek-chat",
+			"messages": [{"role": "user", "content": "Explain quicksort in one sentence."}]
+		}`,
+		UpstreamResponse: mustJSON(map[string]interface{}{
+			"id":    "chatcmpl-ds001",
+			"model": "deepseek-chat",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"role": "assistant", "content": "Quicksort partitions an array around a pivot, recursively sorting the sub-arrays."}},
+			},
+			"usage": map[string]int{
+				"prompt_tokens": 12, "completion_tokens": 16, "total_tokens": 28,
+			},
+		}),
+		UpstreamStatus:   200,
+		ExpectedModel:    "deepseek-chat",
+		ExpectedProvider: "deepseek",
+		ExpectedStatus:   "success",
+		ExpectedTokens:   28,
+	}
+}
+
+// GrokXAI returns an xAI Grok model request to test provider inference.
+func GrokXAI() Fixture {
+	return Fixture{
+		Name: "grok_xai",
+		RequestBody: `{
+			"model": "grok-2",
+			"messages": [{"role": "user", "content": "What is the meaning of life?"}]
+		}`,
+		UpstreamResponse: mustJSON(map[string]interface{}{
+			"id":    "chatcmpl-grok001",
+			"model": "grok-2",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"role": "assistant", "content": "42, according to Douglas Adams."}},
+			},
+			"usage": map[string]int{
+				"prompt_tokens": 10, "completion_tokens": 8, "total_tokens": 18,
+			},
+		}),
+		UpstreamStatus:   200,
+		ExpectedModel:    "grok-2",
+		ExpectedProvider: "xai",
+		ExpectedStatus:   "success",
+		ExpectedTokens:   18,
+	}
+}
+
+// QwenAlibaba returns a Qwen model request to test provider inference.
+func QwenAlibaba() Fixture {
+	return Fixture{
+		Name: "qwen_alibaba",
+		RequestBody: `{
+			"model": "qwen-turbo",
+			"messages": [{"role": "user", "content": "Translate 'hello' to Mandarin."}]
+		}`,
+		UpstreamResponse: mustJSON(map[string]interface{}{
+			"id":    "chatcmpl-qwen001",
+			"model": "qwen-turbo",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"role": "assistant", "content": "你好 (nǐ hǎo)"}},
+			},
+			"usage": map[string]int{
+				"prompt_tokens": 9, "completion_tokens": 7, "total_tokens": 16,
+			},
+		}),
+		UpstreamStatus:   200,
+		ExpectedModel:    "qwen-turbo",
+		ExpectedProvider: "alibaba",
+		ExpectedStatus:   "success",
+		ExpectedTokens:   16,
+	}
+}
+
 // MalformedRequest returns a request with missing model and empty messages.
 func MalformedRequest() Fixture {
 	return Fixture{
@@ -231,6 +309,9 @@ func AllFixtures() []Fixture {
 		SensitivePayload(),
 		HugePayload(),
 		MixedProviders(),
+		DeepSeekChat(),
+		GrokXAI(),
+		QwenAlibaba(),
 		RunawayLoop(),
 		MalformedRequest(),
 	}

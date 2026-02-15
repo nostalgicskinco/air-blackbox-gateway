@@ -140,13 +140,54 @@ func TestInferProvider(t *testing.T) {
 		url      string
 		expected string
 	}{
+		// OpenAI model families
 		{"gpt-4o-mini", "", "openai"},
+		{"gpt-4o", "", "openai"},
+		{"o1-preview", "", "openai"},
+		{"o3-mini", "", "openai"},
+		{"chatgpt-4o-latest", "", "openai"},
+		{"dall-e-3", "", "openai"},
+		// Anthropic
 		{"claude-3-sonnet", "", "anthropic"},
+		{"claude-3-5-sonnet-20241022", "", "anthropic"},
+		{"claude-opus-4-20250514", "", "anthropic"},
+		// Google
 		{"gemini-pro", "", "google"},
+		{"gemini-2.0-flash", "", "google"},
+		// Mistral family
 		{"mistral-7b", "", "mistral"},
+		{"mixtral-8x7b", "", "mistral"},
+		{"codestral-latest", "", "mistral"},
+		{"pixtral-large-latest", "", "mistral"},
+		// Meta
 		{"llama-3.1-70b", "", "meta"},
+		{"meta-llama-3.1-8b", "", "meta"},
+		// DeepSeek
+		{"deepseek-chat", "", "deepseek"},
+		{"deepseek-coder", "", "deepseek"},
+		{"deepseek-r1", "", "deepseek"},
+		// xAI
+		{"grok-2", "", "xai"},
+		{"grok-3-mini", "", "xai"},
+		// Cohere
+		{"command-r-plus", "", "cohere"},
+		{"embed-english-v3.0", "", "cohere"},
+		{"rerank-english-v3.0", "", "cohere"},
+		// Alibaba
+		{"qwen-turbo", "", "alibaba"},
+		{"qwen-2.5-72b", "", "alibaba"},
+		// URL-based fallbacks
 		{"custom-model", "https://api.openai.com", "openai"},
+		{"custom-model", "https://api.anthropic.com", "anthropic"},
+		{"custom-model", "https://api.groq.com", "groq"},
+		{"custom-model", "https://api.together.xyz", "together"},
+		{"custom-model", "https://api.together.ai", "together"},
+		{"custom-model", "https://api.fireworks.ai", "fireworks"},
 		{"custom-model", "https://unknown.example.com", "unknown"},
+		// Case insensitivity
+		{"GPT-4o", "", "openai"},
+		{"DeepSeek-Chat", "", "deepseek"},
+		{"CLAUDE-3-OPUS", "", "anthropic"},
 	}
 
 	for _, tt := range tests {

@@ -233,20 +233,37 @@ func writeAIRRecord(w *recorder.Writer, runID string, span trace.Span, model, pr
 func inferProvider(model, providerURL string) string {
 	model = strings.ToLower(model)
 	switch {
-	case strings.HasPrefix(model, "gpt"), strings.HasPrefix(model, "o1"), strings.HasPrefix(model, "o3"):
+	case strings.HasPrefix(model, "gpt"), strings.HasPrefix(model, "o1"), strings.HasPrefix(model, "o3"),
+		strings.HasPrefix(model, "chatgpt"), strings.HasPrefix(model, "dall-e"):
 		return "openai"
 	case strings.HasPrefix(model, "claude"):
 		return "anthropic"
 	case strings.HasPrefix(model, "gemini"):
 		return "google"
-	case strings.HasPrefix(model, "mistral"), strings.HasPrefix(model, "mixtral"):
+	case strings.HasPrefix(model, "mistral"), strings.HasPrefix(model, "mixtral"),
+		strings.HasPrefix(model, "codestral"), strings.HasPrefix(model, "pixtral"):
 		return "mistral"
-	case strings.HasPrefix(model, "llama"):
+	case strings.HasPrefix(model, "llama"), strings.HasPrefix(model, "meta-llama"):
 		return "meta"
+	case strings.HasPrefix(model, "deepseek"):
+		return "deepseek"
+	case strings.HasPrefix(model, "grok"):
+		return "xai"
+	case strings.HasPrefix(model, "command"), strings.HasPrefix(model, "embed-"),
+		strings.HasPrefix(model, "rerank-"):
+		return "cohere"
+	case strings.HasPrefix(model, "qwen"):
+		return "alibaba"
 	case strings.Contains(providerURL, "openai.com"):
 		return "openai"
 	case strings.Contains(providerURL, "anthropic.com"):
 		return "anthropic"
+	case strings.Contains(providerURL, "groq.com"):
+		return "groq"
+	case strings.Contains(providerURL, "together.xyz"), strings.Contains(providerURL, "together.ai"):
+		return "together"
+	case strings.Contains(providerURL, "fireworks.ai"):
+		return "fireworks"
 	default:
 		return "unknown"
 	}

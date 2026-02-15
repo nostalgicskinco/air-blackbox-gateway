@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/nostalgicskinco/air-blackbox-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/nostalgicskinco/air-blackbox-gateway/actions/workflows/ci.yml)
 [![Go 1.22+](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-enabled-blueviolet?logo=opentelemetry)](https://opentelemetry.io)
 
 **A flight recorder for AI systems. Every LLM call your agents make passes through this gateway, producing a tamper-evident, replayable audit record — without exposing sensitive content to your observability stack.**
@@ -197,8 +197,18 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `localhost:4317` | OTel collector gRPC endpoint |
 | `RUNS_DIR` | `./runs` | Directory for AIR record files |
 
+## Project Philosophy
+
+We believe AI systems should be observable and accountable by default. As autonomous agents gain the ability to send emails, move money, and change data, organizations need an open standard for recording and replaying AI system behavior — not another proprietary lock-in.
+
+AIR Blackbox Gateway provides the open recording protocol. The recorder, replay engine, OTel processors, and CLI tools are Apache-2.0 licensed so that any team can adopt them without legal friction. Future governance and compliance services (hosted evidence storage, tamper-proof ledgers, legal hold, regulator exports) may be provided separately as commercial offerings.
+
+**Open protocol → common dependency → operational expectation → compliance requirement.**
+
+That's the path. And it only works if the foundation is genuinely open.
+
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE) for details.
+Apache-2.0 — see [LICENSE](LICENSE) for details.
 
-Commercial licensing available — see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+The goal is to create an open standard for recording and replaying AI system behavior. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for information about future commercial governance services.

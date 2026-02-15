@@ -1,27 +1,28 @@
-# Commercial License
+# Commercial Governance Services
 
-## Who needs a commercial license?
+## The Open Protocol (Apache-2.0)
 
-This project is available under the [GNU Affero General Public License v3.0](LICENSE) for open-source and internal non-commercial use.
+AIR Blackbox Gateway — including the recorder, replay engine, OTel processors, and CLI — is open source under the Apache License 2.0. You can use it freely in production, modify it, and distribute it.
 
-A **commercial license** is required if you:
+No commercial license is needed for the open-source tools.
 
-- Offer AI audit recording as a **hosted or managed service**
-- Include the gateway or AIR format in a **commercial product**
-- Use this in a way that triggers the AGPL network-interaction clause
+## Future Governance Services
 
-## Who does NOT need a commercial license?
+As the project matures, commercial governance services will be offered separately for organizations that need provable accountability infrastructure:
 
-- Companies using this for **internal AI audit** and observability
-- Open-source projects that comply with the AGPL
-- Individual developers, researchers, and educators
+- **Hosted evidence storage** — managed, encrypted vault for AI run records
+- **Tamper-proof ledger** — cryptographic chain-of-custody for audit trails
+- **Legal hold & retention** — configurable retention policies for regulatory compliance
+- **Audit exports** — formatted evidence packages for regulators and legal teams
+- **Organization dashboards** — centralized visibility across teams and agents
+- **Access policies** — role-based access to recorded AI behavior
+- **SLA-backed support** — guaranteed response times for production incidents
 
-## What's included in a commercial license?
+## Who needs commercial services?
 
-- Perpetual license without AGPL obligations
-- Priority support
-- Enterprise features (vault encryption at rest, multi-tenant isolation, SOC2 retention)
-- SLA-backed response times
+Companies that need to answer: *"Can we prove what our AI systems did, in a way that holds up under scrutiny?"*
+
+The open-source tools let you **record**. The commercial services let you **rely on those records**.
 
 ## Contact
 

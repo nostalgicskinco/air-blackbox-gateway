@@ -172,6 +172,74 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 | **Replay** | `agent-vcr`, `trace-regression-harness` | Record/replay, policy assertions |
 | **Governance** | `mcp-policy-gateway`, `mcp-security-scanner`, `agent-tool-sandbox`, `aibom-policy-engine`, `runtime-aibom-emitter` | Tool perimeter, SBOM, security scanning |
 
+## Operational Guarantees
+
+AIR Blackbox Gateway is a **witness, not a gatekeeper**. It must never become a dependency for uptime.
+
+**Non-blocking** — If the vault (MinIO) is unreachable, the gateway still proxies requests. Your AI system never stops working because recording failed.
+
+**Lossy-safe** — A dropped record is acceptable. A dropped request is not. Recording is best-effort; proxying is guaranteed.
+
+**Self-degrading** — If the OTel Collector is down, spans are dropped silently. If the filesystem is full, AIR records fail gracefully. The gateway logs warnings but never returns errors to your agent.
+
+> **Design principle:** AirBlackBox cannot cause your AI system to fail.
+
+This follows the same contract as Datadog agents, OTel collectors, and other production observability infrastructure. Companies will not insert a system into their AI pipeline if it can break that pipeline.
+
+## Privacy & Data Boundaries
+
+The gateway records AI interactions. Companies will ask: *"Are you storing our customer data?"*
+
+The answer is: **you control all data, and you choose what gets recorded.**
+
+| Recording Mode | What's Stored | Use Case |
+|---|---|---|
+| **Full vault** (default) | Prompts + completions in your MinIO, references in traces | Complete reconstruction capability |
+| **Metadata only** | Model, tokens, timing, run_id — no content | Lightweight audit without content exposure |
+| **Hash only** | SHA-256 of request/response, no content stored | Prove *that* a call happened without storing *what* was said |
+| **Selective redaction** | Content with PII/PHI fields stripped by the genai processor | Healthcare, fintech, enterprise compliance |
+
+The key insight: *"We can prove what happened without exposing the data."* That's what makes this viable for healthcare, fintech, and enterprise buyers who need accountability but have strict data handling requirements.
+
+See [SECURITY.md](SECURITY.md) for the full data handling policy and threat model.
+
+## What Gets Recorded
+
+An AIR record captures everything needed to reconstruct an incident or replay a run. Beyond the request and response, the gateway captures version and configuration context that matters for root cause analysis:
+
+| Field | Why It Matters |
+|---|---|
+| `model` | Which model handled this request |
+| `provider` | Which provider endpoint was called |
+| `timestamp` | When the interaction happened (signed) |
+| `run_id` + `trace_id` | Links the record to distributed traces |
+| `request_checksum` / `response_checksum` | SHA-256 tamper evidence |
+| `vault_ref` | Where the raw content is stored |
+| `tokens.prompt` / `tokens.completion` | Token usage for cost and drift analysis |
+| `duration_ms` | Latency for performance correlation |
+| `status` | Success, error, timeout |
+
+**Why version awareness matters:** Models change silently. OpenAI, Anthropic, and others update weights without notice. When behavior changes and nobody knows why, the first question is: *"Did the model change?"* AIR records let you answer: *"The incident began after the model update at 3:14 PM."*
+
+**Chain of custody:** Every AIR record includes a creation timestamp, checksums, and the identity of the recording system. This isn't just tamper-evidence (proving it wasn't modified) — it's provenance tracking (proving it wasn't mishandled). That's what regulators and lawyers actually verify.
+
+## Roadmap
+
+AIR Blackbox Gateway is building toward becoming an **operational trust layer for AI systems**. Here's what's coming:
+
+| Phase | Capability | Status |
+|---|---|---|
+| **Now** | Recording, replay, vault, OTel pipeline, 8 providers | Shipped |
+| **Next** | Selective recording modes (metadata-only, hash-only, field redaction) | In progress |
+| **Next** | Human-readable incident reports (trace data → narrative) | Planned |
+| **Next** | Backfill ingestion (reconstruct from existing logs) | Planned |
+| **Future** | Hosted evidence storage (commercial trust layer) | Roadmap |
+| **Future** | Tamper-proof ledger service | Roadmap |
+| **Future** | Legal hold, retention policies, regulator exports | Roadmap |
+| **Future** | Organization dashboards, access policies | Roadmap |
+
+The open-source protocol layer (recording, replay, OTel processors, CLI) will always be Apache-2.0. The commercial trust layer (hosted storage, ledger, compliance reporting) is a separate future offering.
+
 ## Configuration
 
 | Environment Variable | Default | Description |

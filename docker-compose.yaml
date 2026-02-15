@@ -19,7 +19,7 @@ services:
       - runs:/data/runs
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
       collector:
         condition: service_started
 
@@ -34,6 +34,12 @@ services:
       - MINIO_ROOT_PASSWORD=minioadmin
     volumes:
       - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   collector:
     image: otel/opentelemetry-collector-contrib:0.104.0

@@ -1,8 +1,15 @@
 # AIR Blackbox Gateway
 
+[![CI](https://github.com/nostalgicskinco/air-blackbox-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/nostalgicskinco/air-blackbox-gateway/actions/workflows/ci.yml)
+[![Go 1.22+](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-enabled-blueviolet?logo=opentelemetry)](https://opentelemetry.io)
+
 **A flight recorder for AI systems. Every LLM call your agents make passes through this gateway, producing a tamper-evident, replayable audit record — without exposing sensitive content to your observability stack.**
 
 When an autonomous agent sends an email, moves money, or changes data, someone will eventually ask: *"Show me exactly what the AI saw and why it made that decision."* Today, most organizations cannot answer that. AIR Blackbox Gateway is the missing infrastructure — an OpenAI-compatible reverse proxy that records every decision an AI system makes so you can reconstruct incidents, prove compliance, and replay runs deterministically.
+
+> **See it in action:** [Interactive Test Suite Demo](https://nostalgicskinco.github.io/air-blackbox-gateway/test-suite-demo.html) — 30 tests across 8 LLM providers, security validation, and concurrency checks.
 
 ## How It Works
 

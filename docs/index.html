@@ -376,7 +376,7 @@
     <span class="highlight">Recorded. Encrypted. Provable.</span>
   </h1>
   <p class="subhead">
-    Drop-in reverse proxy that creates tamper-evident audit trails for every API call to OpenAI, Anthropic, or any LLM provider. Zero code changes. Full compliance.
+    Drop-in reverse proxy that creates tamper-evident audit trails for every API call to OpenAI, Anthropic, or any LLM provider. Zero code changes. Full compliance. SOC 2 &amp; ISO 27001 ready.
   </p>
   <div class="hero-ctas">
     <a href="https://github.com/nostalgicskinco/air-blackbox-gateway" class="btn-primary">
@@ -493,6 +493,21 @@
       <p>Replay recorded requests against current models. Compare outputs. Detect when a model update changed behavior. Regression testing for AI.</p>
     </div>
     <div class="feature-card">
+      <div class="tag tag-compliance">Trust Layer</div>
+      <h3>Cryptographic Audit Chain</h3>
+      <p>Every AIR record is linked via HMAC-SHA256 into a tamper-proof chain. Modify any record and the chain breaks. Blockchain-grade integrity without the blockchain.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-compliance">Trust Layer</div>
+      <h3>SOC 2 &amp; ISO 27001 Mapping</h3>
+      <p>Automatic compliance evaluation against 22 controls across SOC 2 Trust Service Criteria and ISO 27001 Annex A. Pass/fail status based on your live configuration.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-compliance">Trust Layer</div>
+      <h3>Evidence Export for Regulators</h3>
+      <p>One API call generates a signed evidence package: audit chain, compliance report, and HMAC attestation. Hand it to your auditor as-is.</p>
+    </div>
+    <div class="feature-card">
       <div class="tag tag-devex">Developer Experience</div>
       <h3>Docker Compose Ready</h3>
       <p>One command to run. No MinIO dependency required. Works with local filesystem or S3-compatible storage. Your choice.</p>
@@ -533,6 +548,11 @@
     <div class="arch-node" style="border-color: var(--red);">
       <h4>Secret Vault</h4>
       <p>AES-encrypted keys</p>
+    </div>
+    <div style="padding: 0 1.5rem; color: var(--text-dim);">+</div>
+    <div class="arch-node" style="border-color: var(--accent);">
+      <h4>Trust Layer</h4>
+      <p>HMAC chain + compliance</p>
     </div>
   </div>
 </section>
@@ -596,12 +616,12 @@ client = OpenAI(
       <p>Code changes to your app</p>
     </div>
     <div class="stat">
-      <h3>100%</h3>
-      <p>Open source &middot; Apache 2.0</p>
+      <h3>22</h3>
+      <p>Compliance controls mapped (SOC 2 + ISO 27001)</p>
     </div>
     <div class="stat">
-      <h3>&infin;</h3>
-      <p>Providers supported (any OpenAI-compatible API)</p>
+      <h3>82</h3>
+      <p>Tests passing across 5 layers</p>
     </div>
   </div>
 </section>

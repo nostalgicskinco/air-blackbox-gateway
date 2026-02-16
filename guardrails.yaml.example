@@ -69,3 +69,26 @@ prevention:
       - token_budget
       - prompt_loop
     fallback_allow: true
+
+
+## --- Optimization Layer ---
+## Aggregates per-model performance metrics, classifies failures, and
+## auto-routes requests to better models when one is struggling.
+optimization:
+  analytics:
+    enabled: true          # enable /v1/analytics endpoint + metrics tracking
+
+  router:
+    enabled: false          # set true to activate automatic model routing
+    rules:
+      - from_model: "gpt-4"
+        to_model: "gpt-4o"
+        condition: "error_rate"
+        threshold: 0.20     # route when error rate exceeds 20%
+        enabled: true
+
+      - from_model: "gpt-4"
+        to_model: "gpt-4o"
+        condition: "latency_p95"
+        threshold: 10000    # route when p95 latency exceeds 10s
+        enabled: true

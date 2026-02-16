@@ -39,6 +39,7 @@ type Config struct {
 	GatewayKey  string           // optional API key required to use the gateway
 	Guardrails  *guardrails.Config  // guardrails configuration (nil = disabled)
 	Sessions    *guardrails.Manager // session state for guardrails (nil = disabled)
+	Analytics   *guardrails.PerformanceTracker // optimization analytics (nil = disabled)
 }
 
 // Handler returns an http.Handler that proxies OpenAI-compatible requests.
@@ -57,6 +58,13 @@ func Handler(cfg Config) http.Handler {
 			return
 		}
 		handleProxy(w, r, cfg, "/v1/responses")
+	})
+
+	mux.HandleFunc("/v1/analytics", func(w http.ResponseWriter, r *http.Request) {
+		if !authenticateGateway(w, r, cfg.GatewayKey) {
+			return
+		}
+		handleAnalytics(w, r, cfg)
 	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -175,6 +183,26 @@ func handleProxy(w http.ResponseWriter, r *http.Request, cfg Config, endpoint st
 		}
 	}
 
+	// --- Optimization: model routing (opt-in) ---
+	// Checks analytics data and auto-routes to a better model if the current one is struggling.
+	if cfg.Guardrails != nil && cfg.Analytics != nil {
+		decision := guardrails.EvaluateRouting(cfg.Guardrails.Optimization, cfg.Analytics, req.Model)
+		if decision.RoutedModel != decision.OriginalModel {
+			log.Printf("[optimization] model routed: %s → %s (%s: %s)",
+				decision.OriginalModel, decision.RoutedModel, decision.Rule, decision.Reason)
+			req.Model = decision.RoutedModel
+			// Rewrite the model in the request body so upstream gets the routed model.
+			var raw map[string]interface{}
+			if err := json.Unmarshal(reqBody, &raw); err == nil {
+				raw["model"] = decision.RoutedModel
+				if rewritten, err := json.Marshal(raw); err == nil {
+					reqBody = rewritten
+				}
+			}
+			w.Header().Set("X-Model-Routed", decision.RoutedModel)
+		}
+	}
+
 	// --- Detection layer (opt-in) ---
 	// Catches runaway agents: token budgets, prompt loops, tool retry storms, error spirals.
 	// Returns 429 for guardrail violations. Approval webhook can override blocks.
@@ -234,6 +262,13 @@ func handleProxy(w http.ResponseWriter, r *http.Request, cfg Config, endpoint st
 	if err != nil {
 		span.SetAttributes(attribute.String("error", err.Error()))
 		http.Error(w, fmt.Sprintf(`{"error":"upstream: %s"}`, err), http.StatusBadGateway)
+
+		// --- Optimization: record upstream failure ---
+		if cfg.Analytics != nil {
+			errorType := guardrails.ClassifyFailure(502, err.Error())
+			duration := time.Since(start)
+			cfg.Analytics.RecordCall(req.Model, duration.Milliseconds(), 0, 0, 0, "error", errorType)
+		}
 
 		// Fire-and-forget: vault + AIR record for failed requests.
 		go backgroundRecord(cfg, runID, span, req.Model, provider, endpoint,
@@ -323,6 +358,16 @@ func handleStreamingResponse(w http.ResponseWriter, resp *http.Response,
 	log.Printf("[%s] %s model=%s tokens=%d duration=%dms status=%s stream=true",
 		runID, endpoint, req.Model, tokens.Total, duration.Milliseconds(), status)
 
+	// --- Optimization: record metrics + classify failures ---
+	if cfg.Analytics != nil {
+		errorType := ""
+		if resp.StatusCode >= 400 {
+			errorType = guardrails.ClassifyFailure(resp.StatusCode, string(respBytes))
+		}
+		cfg.Analytics.RecordCall(req.Model, duration.Milliseconds(),
+			tokens.Prompt, tokens.Completion, tokens.Total, status, errorType)
+	}
+
 	// Fire-and-forget: vault + AIR record in background.
 	go backgroundRecord(cfg, runID, span, req.Model, provider, endpoint,
 		reqBody, respBytes, start, status, "")
@@ -371,6 +416,17 @@ func handleBufferedResponse(w http.ResponseWriter, resp *http.Response,
 
 	log.Printf("[%s] %s model=%s tokens=%d duration=%dms status=%s",
 		runID, endpoint, req.Model, tokens.Total, duration.Milliseconds(), status)
+
+	// --- Optimization: record metrics + classify failures ---
+	if cfg.Analytics != nil {
+		errorType := ""
+		if resp.StatusCode >= 400 {
+			errorType = guardrails.ClassifyFailure(resp.StatusCode, string(respBody))
+			w.Header().Set("X-Error-Class", errorType)
+		}
+		cfg.Analytics.RecordCall(req.Model, duration.Milliseconds(),
+			tokens.Prompt, tokens.Completion, tokens.Total, status, errorType)
+	}
 
 	// Fire-and-forget: vault + AIR record in background.
 	go backgroundRecord(cfg, runID, span, req.Model, provider, endpoint,
@@ -605,4 +661,46 @@ func inferProvider(model, providerURL string) string {
 	default:
 		return "unknown"
 	}
+}
+
+
+// handleAnalytics returns per-model performance stats as JSON.
+// GET /v1/analytics — returns all models.
+// GET /v1/analytics?model=gpt-4 — returns stats for a specific model.
+func handleAnalytics(w http.ResponseWriter, r *http.Request, cfg Config) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	if cfg.Analytics == nil {
+		http.Error(w, `{"error":"analytics not enabled"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	model := r.URL.Query().Get("model")
+	if model != "" {
+		stats := cfg.Analytics.GetModelStats(model)
+		if stats == nil {
+			http.Error(w, `{"error":"no data for model"}`, http.StatusNotFound)
+			return
+		}
+		result := map[string]interface{}{
+			"model":   stats.Model,
+			"stats":   stats,
+			"latency": stats.ComputeLatency(),
+		}
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	// Return all models.
+	allStats := cfg.Analytics.GetAllStats()
+	result := map[string]interface{}{
+		"models": allStats,
+		"count":  len(allStats),
+	}
+	json.NewEncoder(w).Encode(result)
 }

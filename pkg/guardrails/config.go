@@ -15,7 +15,25 @@ type Config struct {
 	RetryProtection RetryConfig      `yaml:"retry_protection"`
 	Alerts          AlertConfig      `yaml:"alerts"`
 	Actions         ActionsConfig    `yaml:"actions"`
-	Prevention      PreventionConfig `yaml:"prevention"`
+	Prevention      PreventionConfig   `yaml:"prevention"`
+	Optimization    OptimizationConfig `yaml:"optimization"`
+}
+
+// OptimizationConfig holds performance analytics and model routing settings.
+type OptimizationConfig struct {
+	Analytics AnalyticsSubConfig `yaml:"analytics"`
+	Router    RouterConfig       `yaml:"router"`
+}
+
+// AnalyticsSubConfig controls the performance analytics tracker.
+type AnalyticsSubConfig struct {
+	Enabled bool `yaml:"enabled"`
+}
+
+// RouterConfig controls automatic model routing based on analytics data.
+type RouterConfig struct {
+	Enabled bool          `yaml:"enabled"`
+	Rules   []RoutingRule `yaml:"rules"`
 }
 
 // PreventionConfig holds policy enforcement settings.

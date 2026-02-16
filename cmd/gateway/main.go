@@ -99,6 +99,15 @@ func main() {
 		grCfg.Alerts.WebhookURL = webhookURL
 	}
 
+	// --- Optimization analytics (opt-in, enabled when guardrails are loaded) ---
+	var analytics *guardrails.PerformanceTracker
+	if grCfg != nil && grCfg.Optimization.Analytics.Enabled {
+		analytics = guardrails.NewPerformanceTracker()
+		log.Println("Optimization analytics: enabled")
+	} else {
+		log.Println("Optimization analytics: disabled")
+	}
+
 	// --- Proxy handler ---
 	handler := proxy.Handler(proxy.Config{
 		ProviderURL: *providerURL,
@@ -107,6 +116,7 @@ func main() {
 		GatewayKey:  gatewayKey,
 		Guardrails:  grCfg,
 		Sessions:    grMgr,
+		Analytics:   analytics,
 	})
 
 	srv := &http.Server{

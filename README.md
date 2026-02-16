@@ -241,9 +241,9 @@ AIR Blackbox Gateway is building toward becoming an **operational trust layer fo
 | **Now** | Prevention | Automatic policy enforcement (block tool, redact data, downgrade model) | ✅ Shipped |
 | **Now** | Prevention | Human-in-the-loop approval workflows | ✅ Shipped |
 | **Now** | Prevention | Tool allowlists, environment segmentation, PII blocking | ✅ Shipped |
-| **Future** | Optimization | Cross-agent performance analytics | Roadmap |
-| **Future** | Optimization | Automatic model routing and prompt recommendations | Roadmap |
-| **Future** | Optimization | Agent failure taxonomy and pattern library | Roadmap |
+| **v0.6** | Optimization | Cross-agent performance analytics | ✅ Shipped |
+| **v0.6** | Optimization | Automatic model routing and prompt recommendations | ✅ Shipped |
+| **v0.6** | Optimization | Agent failure taxonomy and pattern library | ✅ Shipped |
 | **Future** | Trust Layer | Hosted evidence storage (commercial trust layer) | Roadmap |
 | **Future** | Trust Layer | Tamper-proof ledger service | Roadmap |
 | **Future** | Trust Layer | Legal hold, retention policies, regulator exports | Roadmap |

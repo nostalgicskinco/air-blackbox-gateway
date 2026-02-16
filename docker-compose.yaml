@@ -13,11 +13,13 @@ services:
       - VAULT_USE_SSL=false
       - OTEL_EXPORTER_OTLP_ENDPOINT=collector:4317
       - RUNS_DIR=/data/runs
+      # - GATEWAY_KEY=your-secret-key  # Uncomment to require authentication
     volumes:
       - runs:/data/runs
+    # NOTE: No depends_on for minio — the gateway starts and proxies even if
+    # the vault is temporarily unreachable. This is the "non-blocking" guarantee:
+    # AIR Blackbox Gateway cannot cause your AI system to fail.
     depends_on:
-      minio:
-        condition: service_healthy
       collector:
         condition: service_started
 

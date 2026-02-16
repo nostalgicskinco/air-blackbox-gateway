@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -37,7 +36,7 @@ func TestSecurity_NoPlaintextInAIRRecords(t *testing.T) {
 	h.ServeHTTP(w, req)
 
 	runID := w.Header().Get("x-run-id")
-	airFile := filepath.Join(dir, runID+".air.json")
+	airFile := waitForAIRRecord(t, dir, runID)
 
 	// Read the raw AIR file as bytes — don't just check struct fields,
 	// check the ENTIRE file for plaintext leaks.
@@ -86,7 +85,7 @@ func TestSecurity_AllFixturesNoContentLeak(t *testing.T) {
 			h.ServeHTTP(w, req)
 
 			runID := w.Header().Get("x-run-id")
-			airFile := filepath.Join(dir, runID+".air.json")
+			airFile := waitForAIRRecord(t, dir, runID)
 
 			data, err := os.ReadFile(airFile)
 			if err != nil {
@@ -137,7 +136,8 @@ func TestSecurity_AuthHeaderNotStored(t *testing.T) {
 	h.ServeHTTP(w, req)
 
 	runID := w.Header().Get("x-run-id")
-	data, _ := os.ReadFile(filepath.Join(dir, runID+".air.json"))
+	airFile := waitForAIRRecord(t, dir, runID)
+	data, _ := os.ReadFile(airFile)
 	raw := string(data)
 
 	if strings.Contains(raw, "sk-super-secret-api-key-12345") {
@@ -232,14 +232,8 @@ func TestFailureMode_ConcurrentRequests(t *testing.T) {
 		t.Errorf("expected 10 unique run IDs, got %d", len(runIDs))
 	}
 
-	// All 10 AIR records should exist.
-	entries, _ := os.ReadDir(dir)
-	airCount := 0
-	for _, e := range entries {
-		if strings.HasSuffix(e.Name(), ".air.json") {
-			airCount++
-		}
-	}
+	// Wait for all 10 background goroutines to write AIR records.
+	airCount := waitForAIRRecords(t, dir, 10)
 	if airCount != 10 {
 		t.Errorf("expected 10 AIR records, got %d", airCount)
 	}

@@ -52,8 +52,8 @@ func TestGoldenFixtures(t *testing.T) {
 				t.Fatal("missing x-run-id header")
 			}
 
-			// Load and validate the AIR record.
-			airFile := filepath.Join(dir, runID+".air.json")
+			// Wait for background goroutine to write the AIR record.
+			airFile := waitForAIRRecord(t, dir, runID)
 			loaded, err := recorder.Load(airFile)
 			if err != nil {
 				t.Fatalf("load AIR record: %v", err)
@@ -138,7 +138,8 @@ func TestGoldenFixtures_NoVault(t *testing.T) {
 	}
 
 	runID := w.Header().Get("x-run-id")
-	loaded, err := recorder.Load(filepath.Join(dir, runID+".air.json"))
+	airFile := waitForAIRRecord(t, dir, runID)
+	loaded, err := recorder.Load(airFile)
 	if err != nil {
 		t.Fatalf("load AIR: %v", err)
 	}
@@ -179,9 +180,12 @@ func TestGoldenFixtures_UpstreamDown(t *testing.T) {
 		t.Errorf("expected error body to mention upstream, got: %s", respBody)
 	}
 
-	// AIR record should exist with error status.
+	// Wait for background goroutine to write the AIR record.
+	n := waitForAIRRecords(t, dir, 1)
+	if n == 0 {
+		t.Fatal("no AIR record written for upstream failure")
+	}
 	entries, _ := os.ReadDir(dir)
-	found := false
 	for _, e := range entries {
 		if strings.HasSuffix(e.Name(), ".air.json") {
 			loaded, err := recorder.Load(filepath.Join(dir, e.Name()))
@@ -194,11 +198,7 @@ func TestGoldenFixtures_UpstreamDown(t *testing.T) {
 			if loaded.Error == "" {
 				t.Error("error field should be non-empty")
 			}
-			found = true
 		}
-	}
-	if !found {
-		t.Error("no AIR record written for upstream failure")
 	}
 }
 

@@ -5,8 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -79,12 +77,8 @@ func TestProxyAddsRunID(t *testing.T) {
 		t.Fatal("missing x-run-id header")
 	}
 
-	// Verify AIR record was written.
-	airFile := filepath.Join(dir, runID+".air.json")
-	if _, err := os.Stat(airFile); err != nil {
-		t.Fatalf("AIR record not written: %v", err)
-	}
-
+	// Wait for background goroutine to write AIR record.
+	airFile := waitForAIRRecord(t, dir, runID)
 	loaded, err := recorder.Load(airFile)
 	if err != nil {
 		t.Fatalf("load AIR: %v", err)
@@ -127,8 +121,9 @@ func TestProxyUpstreamError(t *testing.T) {
 		t.Fatal("missing x-run-id even on error")
 	}
 
-	// AIR record should have error status.
-	loaded, _ := recorder.Load(filepath.Join(dir, runID+".air.json"))
+	// Wait for background goroutine, then check AIR record.
+	airFile := waitForAIRRecord(t, dir, runID)
+	loaded, _ := recorder.Load(airFile)
 	if loaded.Status != "error" {
 		t.Errorf("status = %q, want error", loaded.Status)
 	}

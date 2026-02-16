@@ -41,7 +41,7 @@ func main() {
 		defer tp.Shutdown(ctx)
 	}
 
-	// --- Vault setup ---
+	// --- Vault setup (best-effort; gateway works without it) ---
 	var vc *vault.Client
 	vaultEndpoint := envOr("VAULT_ENDPOINT", "")
 	if vaultEndpoint != "" {
@@ -53,7 +53,7 @@ func main() {
 			UseSSL:    envOr("VAULT_USE_SSL", "false") == "true",
 		})
 		if err != nil {
-			log.Printf("WARN: vault disabled: %v", err)
+			log.Printf("WARN: vault disabled: %v (gateway will proxy without recording)", err)
 		} else {
 			log.Printf("Vault connected: %s", vaultEndpoint)
 		}
@@ -64,22 +64,32 @@ func main() {
 	// --- Recorder setup ---
 	rec, err := recorder.NewWriter(*runsDir)
 	if err != nil {
-		log.Fatalf("recorder: %v", err)
+		log.Printf("WARN: AIR recording disabled: %v", err)
+	} else {
+		log.Printf("AIR records: %s", *runsDir)
 	}
-	log.Printf("AIR records: %s", *runsDir)
+
+	// --- Gateway authentication ---
+	gatewayKey := envOr("GATEWAY_KEY", "")
+	if gatewayKey != "" {
+		log.Println("Gateway authentication: enabled (X-Gateway-Key header required)")
+	} else {
+		log.Println("Gateway authentication: disabled (set GATEWAY_KEY to require auth)")
+	}
 
 	// --- Proxy handler ---
 	handler := proxy.Handler(proxy.Config{
 		ProviderURL: *providerURL,
 		Vault:       vc,
 		Recorder:    rec,
+		GatewayKey:  gatewayKey,
 	})
 
 	srv := &http.Server{
 		Addr:         *addr,
 		Handler:      handler,
 		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 120 * time.Second,
+		WriteTimeout: 180 * time.Second, // Allow time for slow LLM streaming responses.
 		IdleTimeout:  60 * time.Second,
 	}
 

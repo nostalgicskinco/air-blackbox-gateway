@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/guardrails"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/proxy"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/vault"
@@ -77,12 +78,35 @@ func main() {
 		log.Println("Gateway authentication: disabled (set GATEWAY_KEY to require auth)")
 	}
 
+	// --- Guardrails setup (opt-in) ---
+	var grCfg *guardrails.Config
+	var grMgr *guardrails.Manager
+	guardrailsPath := envOr("GUARDRAILS_CONFIG", "")
+	if guardrailsPath != "" {
+		grCfg, err = guardrails.LoadConfig(guardrailsPath)
+		if err != nil {
+			log.Fatalf("guardrails config: %v", err)
+		}
+		grMgr = guardrails.NewManager(5 * time.Minute)
+		log.Printf("Guardrails: enabled (%s)", guardrailsPath)
+	} else {
+		log.Println("Guardrails: disabled (set GUARDRAILS_CONFIG to enable)")
+	}
+
+	// Override webhook URL from env if set.
+	webhookURL := envOr("WEBHOOK_URL", "")
+	if webhookURL != "" && grCfg != nil {
+		grCfg.Alerts.WebhookURL = webhookURL
+	}
+
 	// --- Proxy handler ---
 	handler := proxy.Handler(proxy.Config{
 		ProviderURL: *providerURL,
 		Vault:       vc,
 		Recorder:    rec,
 		GatewayKey:  gatewayKey,
+		Guardrails:  grCfg,
+		Sessions:    grMgr,
 	})
 
 	srv := &http.Server{

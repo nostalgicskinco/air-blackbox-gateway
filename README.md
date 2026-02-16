@@ -227,18 +227,31 @@ An AIR record captures everything needed to reconstruct an incident or replay a 
 
 AIR Blackbox Gateway is building toward becoming an **operational trust layer for AI systems**. Here's what's coming:
 
-| Phase | Capability | Status |
-|---|---|---|
-| **Now** | Recording, replay, vault, OTel pipeline, 8 providers | Shipped |
-| **Next** | Selective recording modes (metadata-only, hash-only, field redaction) | In progress |
-| **Next** | Human-readable incident reports (trace data → narrative) | Planned |
-| **Next** | Backfill ingestion (reconstruct from existing logs) | Planned |
-| **Future** | Hosted evidence storage (commercial trust layer) | Roadmap |
-| **Future** | Tamper-proof ledger service | Roadmap |
-| **Future** | Legal hold, retention policies, regulator exports | Roadmap |
-| **Future** | Organization dashboards, access policies | Roadmap |
+| Phase | Layer | Capability | Status |
+|---|---|---|---|
+| **Now** | Visibility | Recording, replay, vault, OTel pipeline, 8 providers | ✅ Shipped |
+| **Now** | Visibility | Non-blocking proxy with streaming, auth, timeout safety | ✅ Shipped |
+| **Next** | Visibility | Selective recording modes (metadata-only, hash-only, field redaction) | In progress |
+| **Next** | Visibility | Human-readable incident reports (trace data → narrative) | Planned |
+| **Next** | Visibility | Backfill ingestion (reconstruct from existing logs) | Planned |
+| **Next** | Detection | Runaway agent kill-switch and cost guardrails (`guardrails.yaml`) | Planned |
+| **Next** | Detection | Loop detection (recursive planner traps, tool retry storms) | Planned |
+| **Next** | Detection | Token explosion and cost anomaly alerts | Planned |
+| **Next** | Detection | Slack/webhook alerting with incident narratives | Planned |
+| **Future** | Prevention | Automatic policy enforcement (block tool, redact data, downgrade model) | Roadmap |
+| **Future** | Prevention | Human-in-the-loop approval workflows | Roadmap |
+| **Future** | Prevention | Tool allowlists, environment segmentation, PII blocking | Roadmap |
+| **Future** | Optimization | Cross-agent performance analytics | Roadmap |
+| **Future** | Optimization | Automatic model routing and prompt recommendations | Roadmap |
+| **Future** | Optimization | Agent failure taxonomy and pattern library | Roadmap |
+| **Future** | Trust Layer | Hosted evidence storage (commercial trust layer) | Roadmap |
+| **Future** | Trust Layer | Tamper-proof ledger service | Roadmap |
+| **Future** | Trust Layer | Legal hold, retention policies, regulator exports | Roadmap |
+| **Future** | Trust Layer | Organization dashboards, access policies | Roadmap |
 
-The open-source protocol layer (recording, replay, OTel processors, CLI) will always be Apache-2.0. The commercial trust layer (hosted storage, ledger, compliance reporting) is a separate future offering.
+**The value ladder:** Visibility (what happened) → Detection (something is wrong) → Prevention (stop it automatically) → Optimization (make it better) → Trust Layer (prove it to regulators). Each layer builds on the one below it.
+
+The open-source protocol layer (recording, replay, detection, OTel processors, CLI) will always be Apache-2.0. The commercial trust and governance layers (hosted storage, ledger, compliance reporting, optimization engine) are separate future offerings.
 
 ## Configuration
 

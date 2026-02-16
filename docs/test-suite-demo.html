@@ -158,9 +158,41 @@
     color: #484f58;
     font-size: 13px;
   }
+  .footer a { color: #58a6ff; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  .top-nav {
+    background: #010409;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px;
+  }
+  .top-nav a {
+    color: #58a6ff; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .top-nav a:hover { color: #79c0ff; }
+  .top-nav .nav-links { display: flex; gap: 20px; align-items: center; }
+  .btn-gh {
+    background: #238636; color: #fff; padding: 5px 16px;
+    border-radius: 6px; font-weight: 600; font-size: 13px;
+    text-decoration: none; transition: background 0.2s;
+  }
+  .btn-gh:hover { background: #2ea043; }
+
+  .test-card { cursor: default; }
 </style>
 </head>
 <body>
+
+<div class="top-nav">
+  <a href="/air-blackbox-gateway/">&larr; Back to Landing Page</a>
+  <div class="nav-links">
+    <a href="https://github.com/nostalgicskinco/air-blackbox-gateway">Source Code</a>
+    <a href="https://github.com/nostalgicskinco/air-blackbox-gateway/tree/main/pkg/proxy" class="btn-gh">&#9733; Star on GitHub</a>
+  </div>
+</div>
 
 <div class="header">
   <div class="logo">A</div>
@@ -278,7 +310,11 @@
 </div>
 
 <div class="footer">
-  nostalgicskinco &bull; AIR Blackbox Gateway &bull; Test run: February 15, 2026 &bull; Go 1.24 &bull; All 30 tests passing
+  <a href="https://github.com/nostalgicskinco">nostalgicskinco</a> &bull;
+  <a href="https://github.com/nostalgicskinco/air-blackbox-gateway">AIR Blackbox Gateway</a> &bull;
+  Test run: February 15, 2026 &bull; Go 1.24 &bull; All 30 tests passing
+  <br><br>
+  <a href="/air-blackbox-gateway/">&larr; Back to Landing Page</a>
 </div>
 
 <script>

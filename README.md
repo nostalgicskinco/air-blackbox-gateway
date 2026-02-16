@@ -238,9 +238,9 @@ AIR Blackbox Gateway is building toward becoming an **operational trust layer fo
 | **Now** | Detection | Loop detection (recursive planner traps, tool retry storms) | ✅ Shipped |
 | **Now** | Detection | Token explosion and cost anomaly alerts | ✅ Shipped |
 | **Now** | Detection | Slack/webhook alerting with incident narratives | ✅ Shipped |
-| **Future** | Prevention | Automatic policy enforcement (block tool, redact data, downgrade model) | Roadmap |
-| **Future** | Prevention | Human-in-the-loop approval workflows | Roadmap |
-| **Future** | Prevention | Tool allowlists, environment segmentation, PII blocking | Roadmap |
+| **Now** | Prevention | Automatic policy enforcement (block tool, redact data, downgrade model) | ✅ Shipped |
+| **Now** | Prevention | Human-in-the-loop approval workflows | ✅ Shipped |
+| **Now** | Prevention | Tool allowlists, environment segmentation, PII blocking | ✅ Shipped |
 | **Future** | Optimization | Cross-agent performance analytics | Roadmap |
 | **Future** | Optimization | Automatic model routing and prompt recommendations | Roadmap |
 | **Future** | Optimization | Agent failure taxonomy and pattern library | Roadmap |

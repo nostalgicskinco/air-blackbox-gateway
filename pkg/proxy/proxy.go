@@ -5,6 +5,7 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/guardrails"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/vault"
 	"go.opentelemetry.io/otel"
@@ -35,6 +37,8 @@ type Config struct {
 	Vault       *vault.Client    // S3 vault for content (nil = disabled)
 	Recorder    *recorder.Writer // AIR file writer (nil = disabled)
 	GatewayKey  string           // optional API key required to use the gateway
+	Guardrails  *guardrails.Config  // guardrails configuration (nil = disabled)
+	Sessions    *guardrails.Manager // session state for guardrails (nil = disabled)
 }
 
 // Handler returns an http.Handler that proxies OpenAI-compatible requests.
@@ -132,6 +136,46 @@ func handleProxy(w http.ResponseWriter, r *http.Request, cfg Config, endpoint st
 	provider := inferProvider(req.Model, cfg.ProviderURL)
 	span.SetAttributes(attribute.String("gen_ai.system", provider))
 
+	// --- Guardrails check (opt-in) ---
+	if cfg.Guardrails != nil && cfg.Sessions != nil {
+		sessionID := extractSessionID(r)
+		cfg.Sessions.GetOrCreate(sessionID)
+
+		// Extract prompt text and tool names from the request.
+		promptText := extractPromptText(req.Messages)
+		toolNames := extractToolNames(reqBody)
+
+		// Record this request for tracking.
+		cfg.Sessions.RecordRequest(sessionID, promptText, toolNames)
+
+		// Evaluate guardrails.
+		evalReq := &guardrails.EvalRequest{
+			PromptText: promptText,
+			ToolNames:  toolNames,
+			Model:      req.Model,
+		}
+		if v := guardrails.Evaluate(cfg.Guardrails, cfg.Sessions, sessionID, evalReq); v != nil {
+			// Guardrail triggered — block the request.
+			log.Printf("[guardrails] %s: %s (session=%s)", v.Rule, v.Message, sessionID)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": map[string]interface{}{
+					"type":       "agent_guardrail_triggered",
+					"rule":       v.Rule,
+					"message":    v.Message,
+					"session_id": v.SessionID,
+					"details":    v.Details,
+				},
+			})
+			// Fire async alert.
+			go guardrails.SendWebhookAlert(cfg.Guardrails.Alerts.WebhookURL, v)
+			// Remove the session so it doesn't keep triggering.
+			cfg.Sessions.Remove(sessionID)
+			return
+		}
+	}
+
 	// Forward to upstream provider.
 	upstream := cfg.ProviderURL + endpoint
 	proxyReq, err := http.NewRequestWithContext(ctx, "POST", upstream, bytes.NewReader(reqBody))
@@ -171,6 +215,13 @@ func handleProxy(w http.ResponseWriter, r *http.Request, cfg Config, endpoint st
 		handleStreamingResponse(w, resp, cfg, runID, span, req, provider, endpoint, reqBody, start)
 	} else {
 		handleBufferedResponse(w, resp, cfg, runID, span, req, provider, endpoint, reqBody, start)
+	}
+
+	// Update guardrails session state after response.
+	if cfg.Guardrails != nil && cfg.Sessions != nil {
+		sessionID := extractSessionID(r)
+		isError := resp.StatusCode >= 400
+		cfg.Sessions.RecordResponse(sessionID, 0, isError)
 	}
 }
 
@@ -402,6 +453,79 @@ func writeAIRRecord(w *recorder.Writer, runID string, span trace.Span, model, pr
 	if err := w.Write(rec); err != nil {
 		log.Printf("[%s] write AIR record: %v", runID, err)
 	}
+}
+
+// extractSessionID derives a session identifier from the request.
+// Checks X-Session-ID header first, then falls back to a hash of the Authorization header.
+func extractSessionID(r *http.Request) string {
+	if sid := r.Header.Get("X-Session-ID"); sid != "" {
+		return sid
+	}
+	auth := r.Header.Get("Authorization")
+	if auth != "" {
+		h := sha256.Sum256([]byte(auth))
+		return fmt.Sprintf("auth_%x", h[:8])
+	}
+	return "anonymous"
+}
+
+// extractPromptText pulls the last user message content from raw messages JSON.
+func extractPromptText(messages json.RawMessage) string {
+	if messages == nil {
+		return ""
+	}
+	var msgs []struct {
+		Role    string          `json:"role"`
+		Content json.RawMessage `json:"content"`
+	}
+	if err := json.Unmarshal(messages, &msgs); err != nil {
+		return ""
+	}
+	// Walk backwards to find the last user message.
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role == "user" {
+			// Content can be a string or an array of content parts.
+			var text string
+			if err := json.Unmarshal(msgs[i].Content, &text); err == nil {
+				return text
+			}
+			// Try array of content parts.
+			var parts []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			}
+			if err := json.Unmarshal(msgs[i].Content, &parts); err == nil {
+				for _, p := range parts {
+					if p.Type == "text" {
+						return p.Text
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// extractToolNames pulls tool/function names from the request body.
+func extractToolNames(body []byte) []string {
+	var req struct {
+		Tools []struct {
+			Function struct {
+				Name string `json:"name"`
+			} `json:"function"`
+		} `json:"tools"`
+		ToolChoice interface{} `json:"tool_choice"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		return nil
+	}
+	var names []string
+	for _, t := range req.Tools {
+		if t.Function.Name != "" {
+			names = append(names, t.Function.Name)
+		}
+	}
+	return names
 }
 
 func inferProvider(model, providerURL string) string {

@@ -1,0 +1,31 @@
+## AIR Blackbox Gateway — Guardrails Configuration
+## Copy this file and set GUARDRAILS_CONFIG to enable agent safety detection.
+##
+## When a guardrail triggers, the gateway returns HTTP 429 with a
+## structured error instead of forwarding to the LLM provider.
+
+budgets:
+  max_session_tokens: 80000
+  max_session_cost_usd: 25
+
+loop_detection:
+  similar_prompt_threshold: 0.80
+  max_similar_prompts: 5
+  window_seconds: 60
+
+tool_protection:
+  max_repeat_calls: 3
+  repeat_window_seconds: 30
+
+retry_protection:
+  max_consecutive_errors: 3
+
+alerts:
+  webhook_url: ""  # Slack incoming webhook URL
+
+actions:
+  on_trigger:
+    - terminate_session
+    - block_tool_execution
+    - alert_webhook
+    - save_replay

@@ -92,3 +92,15 @@ optimization:
         condition: "latency_p95"
         threshold: 10000    # route when p95 latency exceeds 10s
         enabled: true
+
+
+## --- Trust Layer ---
+## Cryptographic audit chain, compliance reporting, and evidence export.
+## Turns AIR records into tamper-proof, regulator-ready evidence packages.
+trust:
+  enabled: true
+  signing_key: ""  # set via TRUST_SIGNING_KEY env var (HMAC-SHA256 key)
+  compliance:
+    frameworks:
+      - SOC2
+      - ISO27001

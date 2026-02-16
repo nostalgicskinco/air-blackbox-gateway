@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/guardrails"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
+	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/trust"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/vault"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -40,6 +41,7 @@ type Config struct {
 	Guardrails  *guardrails.Config  // guardrails configuration (nil = disabled)
 	Sessions    *guardrails.Manager // session state for guardrails (nil = disabled)
 	Analytics   *guardrails.PerformanceTracker // optimization analytics (nil = disabled)
+	AuditChain  *trust.AuditChain  // cryptographic audit chain (nil = disabled)
 }
 
 // Handler returns an http.Handler that proxies OpenAI-compatible requests.
@@ -65,6 +67,20 @@ func Handler(cfg Config) http.Handler {
 			return
 		}
 		handleAnalytics(w, r, cfg)
+	})
+
+	mux.HandleFunc("/v1/audit", func(w http.ResponseWriter, r *http.Request) {
+		if !authenticateGateway(w, r, cfg.GatewayKey) {
+			return
+		}
+		handleAudit(w, r, cfg)
+	})
+
+	mux.HandleFunc("/v1/audit/export", func(w http.ResponseWriter, r *http.Request) {
+		if !authenticateGateway(w, r, cfg.GatewayKey) {
+			return
+		}
+		handleAuditExport(w, r, cfg)
 	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -476,6 +492,20 @@ func backgroundRecord(cfg Config, runID string, span trace.Span,
 	// Write AIR record (best-effort).
 	writeAIRRecord(cfg.Recorder, runID, span, model, provider, endpoint,
 		reqRef, respRef, tokens, start, status, errMsg)
+
+	// Append to cryptographic audit chain (best-effort).
+	if cfg.AuditChain != nil {
+		recordJSON, _ := json.Marshal(map[string]interface{}{
+			"run_id":    runID,
+			"model":     model,
+			"provider":  provider,
+			"endpoint":  endpoint,
+			"status":    status,
+			"tokens":    tokens,
+			"timestamp": start.UTC(),
+		})
+		cfg.AuditChain.Append(runID, recordJSON)
+	}
 }
 
 // extractStreamTokens attempts to extract token usage from the last SSE data chunk.
@@ -703,4 +733,85 @@ func handleAnalytics(w http.ResponseWriter, r *http.Request, cfg Config) {
 		"count":  len(allStats),
 	}
 	json.NewEncoder(w).Encode(result)
+}
+
+// handleAudit returns the audit chain status and compliance report.
+// GET /v1/audit — chain integrity + compliance evaluation.
+func handleAudit(w http.ResponseWriter, r *http.Request, cfg Config) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	if cfg.AuditChain == nil {
+		http.Error(w, `{"error":"trust layer not enabled"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Verify chain integrity.
+	valid, brokenAt, verifyErr := cfg.AuditChain.Verify()
+
+	result := map[string]interface{}{
+		"chain_length":   cfg.AuditChain.Len(),
+		"chain_valid":    valid,
+		"chain_broken_at": brokenAt,
+	}
+	if verifyErr != nil {
+		result["chain_error"] = verifyErr.Error()
+	}
+
+	// Run compliance evaluation if guardrails config has frameworks.
+	if cfg.Guardrails != nil && len(cfg.Guardrails.Trust.Compliance.Frameworks) > 0 {
+		compCfg := trust.ComplianceConfig{
+			Frameworks: cfg.Guardrails.Trust.Compliance.Frameworks,
+		}
+		hasVault := cfg.Vault != nil
+		hasGuardrails := cfg.Guardrails != nil
+		hasAnalytics := cfg.Analytics != nil
+		report := trust.EvaluateCompliance(compCfg, cfg.AuditChain.Len(), hasVault, hasGuardrails, hasAnalytics)
+		result["compliance"] = report
+	}
+
+	json.NewEncoder(w).Encode(result)
+}
+
+// handleAuditExport generates a full evidence package for regulators.
+// GET /v1/audit/export — returns a signed evidence package JSON.
+func handleAuditExport(w http.ResponseWriter, r *http.Request, cfg Config) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	if cfg.AuditChain == nil {
+		http.Error(w, `{"error":"trust layer not enabled"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Build compliance report.
+	var compliance *trust.ComplianceReport
+	if cfg.Guardrails != nil && len(cfg.Guardrails.Trust.Compliance.Frameworks) > 0 {
+		compCfg := trust.ComplianceConfig{
+			Frameworks: cfg.Guardrails.Trust.Compliance.Frameworks,
+		}
+		hasVault := cfg.Vault != nil
+		hasGuardrails := cfg.Guardrails != nil
+		hasAnalytics := cfg.Analytics != nil
+		compliance = trust.EvaluateCompliance(compCfg, cfg.AuditChain.Len(), hasVault, hasGuardrails, hasAnalytics)
+	}
+
+	// Get signing key from guardrails config.
+	signingKey := ""
+	if cfg.Guardrails != nil {
+		signingKey = cfg.Guardrails.Trust.SigningKey
+	}
+
+	gatewayID := "air-blackbox-gateway"
+	pkg := trust.GenerateEvidencePackage(cfg.AuditChain, compliance, gatewayID, signingKey)
+
+	json.NewEncoder(w).Encode(pkg)
 }

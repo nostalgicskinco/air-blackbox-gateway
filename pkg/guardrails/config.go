@@ -17,6 +17,19 @@ type Config struct {
 	Actions         ActionsConfig    `yaml:"actions"`
 	Prevention      PreventionConfig   `yaml:"prevention"`
 	Optimization    OptimizationConfig `yaml:"optimization"`
+	Trust           TrustConfig        `yaml:"trust"`
+}
+
+// TrustConfig holds cryptographic audit chain and compliance reporting settings.
+type TrustConfig struct {
+	Enabled    bool             `yaml:"enabled"`
+	SigningKey string           `yaml:"signing_key"` // overridden by TRUST_SIGNING_KEY env
+	Compliance ComplianceConfig `yaml:"compliance"`
+}
+
+// ComplianceConfig controls which compliance frameworks to evaluate.
+type ComplianceConfig struct {
+	Frameworks []string `yaml:"frameworks"` // e.g. ["SOC2", "ISO27001"]
 }
 
 // OptimizationConfig holds performance analytics and model routing settings.

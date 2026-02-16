@@ -244,9 +244,10 @@ AIR Blackbox Gateway is building toward becoming an **operational trust layer fo
 | **v0.6** | Optimization | Cross-agent performance analytics | ✅ Shipped |
 | **v0.6** | Optimization | Automatic model routing and prompt recommendations | ✅ Shipped |
 | **v0.6** | Optimization | Agent failure taxonomy and pattern library | ✅ Shipped |
+| **v0.7** | Trust Layer | Tamper-proof cryptographic audit chain (HMAC-SHA256) | ✅ Shipped |
+| **v0.7** | Trust Layer | Compliance reporting (SOC 2 + ISO 27001 control mapping) | ✅ Shipped |
+| **v0.7** | Trust Layer | Signed evidence package export for regulators | ✅ Shipped |
 | **Future** | Trust Layer | Hosted evidence storage (commercial trust layer) | Roadmap |
-| **Future** | Trust Layer | Tamper-proof ledger service | Roadmap |
-| **Future** | Trust Layer | Legal hold, retention policies, regulator exports | Roadmap |
 | **Future** | Trust Layer | Organization dashboards, access policies | Roadmap |
 
 **The value ladder:** Visibility (what happened) → Detection (something is wrong) → Prevention (stop it automatically) → Optimization (make it better) → Trust Layer (prove it to regulators). Each layer builds on the one below it.
@@ -266,6 +267,7 @@ The open-source protocol layer (recording, replay, detection, OTel processors, C
 | `VAULT_USE_SSL` | `false` | Use TLS for S3 |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `localhost:4317` | OTel collector gRPC endpoint |
 | `RUNS_DIR` | `./runs` | Directory for AIR record files |
+| `TRUST_SIGNING_KEY` | *(none)* | HMAC-SHA256 key for audit chain signing |
 
 ## Project Philosophy
 

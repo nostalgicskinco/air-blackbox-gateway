@@ -15,6 +15,7 @@ import (
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/guardrails"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/proxy"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
+	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/trust"
 	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/vault"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -108,6 +109,21 @@ func main() {
 		log.Println("Optimization analytics: disabled")
 	}
 
+	// --- Trust layer setup (opt-in) ---
+	var auditChain *trust.AuditChain
+	if grCfg != nil && grCfg.Trust.Enabled {
+		signingKey := envOr("TRUST_SIGNING_KEY", grCfg.Trust.SigningKey)
+		if signingKey == "" {
+			log.Println("WARN: Trust layer enabled but no signing key set (set TRUST_SIGNING_KEY)")
+			signingKey = "insecure-default-key"
+		}
+		grCfg.Trust.SigningKey = signingKey // store resolved key for export endpoint
+		auditChain = trust.NewAuditChain(signingKey)
+		log.Printf("Trust layer: enabled (frameworks: %v)", grCfg.Trust.Compliance.Frameworks)
+	} else {
+		log.Println("Trust layer: disabled (enable in guardrails.yaml trust section)")
+	}
+
 	// --- Proxy handler ---
 	handler := proxy.Handler(proxy.Config{
 		ProviderURL: *providerURL,
@@ -117,6 +133,7 @@ func main() {
 		Guardrails:  grCfg,
 		Sessions:    grMgr,
 		Analytics:   analytics,
+		AuditChain:  auditChain,
 	})
 
 	srv := &http.Server{

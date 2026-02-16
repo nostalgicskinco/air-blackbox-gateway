@@ -117,6 +117,16 @@ func (m *Manager) RecordResponse(sessionID string, tokens int, isError bool) {
 	}
 }
 
+// GetSessionTokens returns the total tokens for a session, or 0 if not found.
+func (m *Manager) GetSessionTokens(sessionID string) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if s, ok := m.sessions[sessionID]; ok {
+		return s.TotalTokens
+	}
+	return 0
+}
+
 // Remove deletes a session (used when a guardrail terminates it).
 func (m *Manager) Remove(sessionID string) {
 	m.mu.Lock()

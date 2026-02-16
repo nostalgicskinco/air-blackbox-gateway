@@ -9,12 +9,56 @@ import (
 // Config holds all guardrail thresholds and alert settings.
 // If nil, guardrails are disabled and the gateway operates normally.
 type Config struct {
-	Budgets         BudgetConfig  `yaml:"budgets"`
-	LoopDetection   LoopConfig    `yaml:"loop_detection"`
-	ToolProtection  ToolConfig    `yaml:"tool_protection"`
-	RetryProtection RetryConfig   `yaml:"retry_protection"`
-	Alerts          AlertConfig   `yaml:"alerts"`
-	Actions         ActionsConfig `yaml:"actions"`
+	Budgets         BudgetConfig     `yaml:"budgets"`
+	LoopDetection   LoopConfig       `yaml:"loop_detection"`
+	ToolProtection  ToolConfig       `yaml:"tool_protection"`
+	RetryProtection RetryConfig      `yaml:"retry_protection"`
+	Alerts          AlertConfig      `yaml:"alerts"`
+	Actions         ActionsConfig    `yaml:"actions"`
+	Prevention      PreventionConfig `yaml:"prevention"`
+}
+
+// PreventionConfig holds policy enforcement settings.
+// Prevention runs before detection and can modify or block requests.
+type PreventionConfig struct {
+	Tools       ToolFilterConfig `yaml:"tools"`
+	PII         PIIConfig        `yaml:"pii"`
+	ModelLimits ModelLimitConfig `yaml:"model_limits"`
+	Approval    ApprovalConfig   `yaml:"approval"`
+}
+
+// ToolFilterConfig controls which tools agents can use.
+type ToolFilterConfig struct {
+	Enabled   bool     `yaml:"enabled"`
+	Allowlist []string `yaml:"allowlist"` // if set, only these tools allowed
+	Blocklist []string `yaml:"blocklist"` // if allowlist empty, block these
+}
+
+// PIIConfig controls PII detection and handling in prompts.
+type PIIConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	BlockSSN   bool   `yaml:"block_ssn"`
+	BlockCC    bool   `yaml:"block_cc"`
+	BlockEmail bool   `yaml:"block_email"`
+	BlockPhone bool   `yaml:"block_phone"`
+	RedactMode string `yaml:"redact_mode"` // "block" or "redact"
+}
+
+// ModelLimitConfig controls cost-based model downgrading.
+type ModelLimitConfig struct {
+	Enabled          bool               `yaml:"enabled"`
+	CostPerMToken    map[string]float64 `yaml:"cost_per_mtoken"`
+	CostThresholdUSD float64            `yaml:"cost_threshold_usd"`
+	DowngradeMap     map[string]string  `yaml:"downgrade_map"`
+}
+
+// ApprovalConfig controls human-in-the-loop approval for violations.
+type ApprovalConfig struct {
+	Enabled        bool     `yaml:"enabled"`
+	WebhookURL     string   `yaml:"webhook_url"`
+	TimeoutSeconds int      `yaml:"timeout_seconds"`
+	Rules          []string `yaml:"rules"`         // which rules require approval
+	FallbackAllow  bool     `yaml:"fallback_allow"` // true = allow on timeout
 }
 
 // BudgetConfig sets token and cost limits per session.
@@ -95,5 +139,13 @@ func applyDefaults(cfg *Config) {
 	}
 	if cfg.RetryProtection.MaxConsecutiveErrors == 0 {
 		cfg.RetryProtection.MaxConsecutiveErrors = 3
+	}
+
+	// Prevention defaults
+	if cfg.Prevention.PII.RedactMode == "" {
+		cfg.Prevention.PII.RedactMode = "redact"
+	}
+	if cfg.Prevention.Approval.TimeoutSeconds == 0 {
+		cfg.Prevention.Approval.TimeoutSeconds = 30
 	}
 }

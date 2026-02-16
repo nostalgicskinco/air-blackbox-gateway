@@ -234,10 +234,10 @@ AIR Blackbox Gateway is building toward becoming an **operational trust layer fo
 | **Next** | Visibility | Selective recording modes (metadata-only, hash-only, field redaction) | In progress |
 | **Next** | Visibility | Human-readable incident reports (trace data → narrative) | Planned |
 | **Next** | Visibility | Backfill ingestion (reconstruct from existing logs) | Planned |
-| **Next** | Detection | Runaway agent kill-switch and cost guardrails (`guardrails.yaml`) | Planned |
-| **Next** | Detection | Loop detection (recursive planner traps, tool retry storms) | Planned |
-| **Next** | Detection | Token explosion and cost anomaly alerts | Planned |
-| **Next** | Detection | Slack/webhook alerting with incident narratives | Planned |
+| **Now** | Detection | Runaway agent kill-switch and cost guardrails (`guardrails.yaml`) | ✅ Shipped |
+| **Now** | Detection | Loop detection (recursive planner traps, tool retry storms) | ✅ Shipped |
+| **Now** | Detection | Token explosion and cost anomaly alerts | ✅ Shipped |
+| **Now** | Detection | Slack/webhook alerting with incident narratives | ✅ Shipped |
 | **Future** | Prevention | Automatic policy enforcement (block tool, redact data, downgrade model) | Roadmap |
 | **Future** | Prevention | Human-in-the-loop approval workflows | Roadmap |
 | **Future** | Prevention | Tool allowlists, environment segmentation, PII blocking | Roadmap |

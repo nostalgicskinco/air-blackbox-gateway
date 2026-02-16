@@ -136,43 +136,83 @@ func handleProxy(w http.ResponseWriter, r *http.Request, cfg Config, endpoint st
 	provider := inferProvider(req.Model, cfg.ProviderURL)
 	span.SetAttributes(attribute.String("gen_ai.system", provider))
 
-	// --- Guardrails check (opt-in) ---
+	// --- Prevention layer (opt-in) ---
+	// Runs BEFORE detection. May modify the request body (PII redaction, tool filtering,
+	// model downgrade) or block entirely. Returns 403 for policy blocks.
+	if cfg.Guardrails != nil {
+		sessionID := extractSessionID(r)
+		promptText := extractPromptText(req.Messages)
+		toolNames := extractToolNames(reqBody)
+		sessionTokens := 0
+		if cfg.Sessions != nil {
+			sessionTokens = cfg.Sessions.GetSessionTokens(sessionID)
+		}
+
+		prevResult := guardrails.EvaluatePrevention(cfg.Guardrails, reqBody, promptText, toolNames, req.Model, sessionTokens)
+		if prevResult.Blocked {
+			log.Printf("[prevention] blocked: %s (session=%s)", prevResult.BlockReason, sessionID)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": map[string]interface{}{
+					"type":    "prevention_policy_blocked",
+					"message": prevResult.BlockReason,
+				},
+			})
+			go guardrails.SendWebhookAlert(cfg.Guardrails.Alerts.WebhookURL, &guardrails.Violation{
+				Rule:      "prevention",
+				Message:   prevResult.BlockReason,
+				SessionID: sessionID,
+			})
+			return
+		}
+		if prevResult.ModifiedBody != nil {
+			reqBody = prevResult.ModifiedBody
+			// Re-parse the modified body so downstream uses the updated model/messages.
+			json.Unmarshal(reqBody, &req)
+			log.Printf("[prevention] request modified: pii_redacted=%v tools_filtered=%v model_downgraded=%s",
+				prevResult.PIIRedacted, prevResult.ToolsFiltered, prevResult.ModelDowngraded)
+		}
+	}
+
+	// --- Detection layer (opt-in) ---
+	// Catches runaway agents: token budgets, prompt loops, tool retry storms, error spirals.
+	// Returns 429 for guardrail violations. Approval webhook can override blocks.
 	if cfg.Guardrails != nil && cfg.Sessions != nil {
 		sessionID := extractSessionID(r)
 		cfg.Sessions.GetOrCreate(sessionID)
 
-		// Extract prompt text and tool names from the request.
 		promptText := extractPromptText(req.Messages)
 		toolNames := extractToolNames(reqBody)
-
-		// Record this request for tracking.
 		cfg.Sessions.RecordRequest(sessionID, promptText, toolNames)
 
-		// Evaluate guardrails.
 		evalReq := &guardrails.EvalRequest{
 			PromptText: promptText,
 			ToolNames:  toolNames,
 			Model:      req.Model,
 		}
 		if v := guardrails.Evaluate(cfg.Guardrails, cfg.Sessions, sessionID, evalReq); v != nil {
-			// Guardrail triggered — block the request.
-			log.Printf("[guardrails] %s: %s (session=%s)", v.Rule, v.Message, sessionID)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error": map[string]interface{}{
-					"type":       "agent_guardrail_triggered",
-					"rule":       v.Rule,
-					"message":    v.Message,
-					"session_id": v.SessionID,
-					"details":    v.Details,
-				},
-			})
-			// Fire async alert.
-			go guardrails.SendWebhookAlert(cfg.Guardrails.Alerts.WebhookURL, v)
-			// Remove the session so it doesn't keep triggering.
-			cfg.Sessions.Remove(sessionID)
-			return
+			// Check approval webhook before blocking.
+			approved, _ := guardrails.RequestApproval(r.Context(), cfg.Guardrails.Prevention.Approval, v)
+			if approved {
+				log.Printf("[guardrails] %s: approved via webhook (session=%s)", v.Rule, sessionID)
+			} else {
+				log.Printf("[guardrails] %s: %s (session=%s)", v.Rule, v.Message, sessionID)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"error": map[string]interface{}{
+						"type":       "agent_guardrail_triggered",
+						"rule":       v.Rule,
+						"message":    v.Message,
+						"session_id": v.SessionID,
+						"details":    v.Details,
+					},
+				})
+				go guardrails.SendWebhookAlert(cfg.Guardrails.Alerts.WebhookURL, v)
+				cfg.Sessions.Remove(sessionID)
+				return
+			}
 		}
 	}
 

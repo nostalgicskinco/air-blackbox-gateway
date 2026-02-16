@@ -29,3 +29,43 @@ actions:
     - block_tool_execution
     - alert_webhook
     - save_replay
+
+## --- Prevention Layer ---
+## Runs BEFORE detection. Modifies requests to enforce policies before they
+## reach the LLM provider. Prevention returns 403, detection returns 429.
+prevention:
+  tools:
+    enabled: true
+    allowlist: []         # empty = allow all (use blocklist instead)
+    blocklist:
+      - execute_dangerous_command
+      - delete_all_data
+
+  pii:
+    enabled: true
+    block_ssn: true
+    block_cc: true
+    block_email: false
+    block_phone: false
+    redact_mode: "redact"  # "block" = reject request, "redact" = replace with [SSN] etc.
+
+  model_limits:
+    enabled: false
+    cost_per_mtoken:
+      "gpt-4o": 0.0025
+      "gpt-4o-mini": 0.00015
+      "gpt-4": 0.03
+      "gpt-3.5-turbo": 0.0005
+    cost_threshold_usd: 10.0
+    downgrade_map:
+      "gpt-4": "gpt-3.5-turbo"
+      "gpt-4o": "gpt-4o-mini"
+
+  approval:
+    enabled: false
+    webhook_url: ""
+    timeout_seconds: 30
+    rules:
+      - token_budget
+      - prompt_loop
+    fallback_allow: true

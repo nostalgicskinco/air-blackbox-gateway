@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR Blackbox Gateway — Tamper-Evident Audit Trails for Every LLM Call</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --text: #e0e0e0;
+    --text-dim: #888888;
+    --accent: #00d4aa;
+    --accent-dim: #00a080;
+    --accent-glow: rgba(0, 212, 170, 0.15);
+    --red: #ff4d4d;
+    --orange: #ff9933;
+    --blue: #4d9fff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    background: rgba(10,10,10,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  nav .logo {
+    font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  nav .logo .icon { color: var(--accent); font-size: 1.3rem; }
+  nav .links { display: flex; gap: 1.5rem; align-items: center; }
+  nav .links a {
+    color: var(--text-dim); text-decoration: none; font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  nav .links a:hover { color: var(--text); }
+  .btn-nav {
+    background: var(--accent); color: #000; padding: 0.5rem 1.2rem;
+    border-radius: 6px; font-weight: 600; font-size: 0.85rem;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .btn-nav:hover { background: #00eabb; transform: translateY(-1px); }
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 30% 20%, var(--accent-glow) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 80%, rgba(77,159,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 100px; padding: 0.4rem 1rem;
+    font-size: 0.8rem; color: var(--text-dim);
+    margin-bottom: 2rem;
+  }
+  .hero-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.1; max-width: 800px;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 .highlight { color: var(--accent); }
+  .hero .subhead {
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
+    color: var(--text-dim); max-width: 600px;
+    margin-bottom: 2.5rem; line-height: 1.6;
+  }
+  .hero-ctas {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--accent); color: #000; padding: 0.9rem 2rem;
+    border-radius: 8px; font-weight: 700; font-size: 1rem;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+  .btn-primary:hover { background: #00eabb; transform: translateY(-2px); }
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border);
+    padding: 0.9rem 2rem; border-radius: 8px;
+    font-weight: 600; font-size: 1rem;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--text-dim); transform: translateY(-2px); }
+  /* ── INSTALL BLOCK ── */
+  .install {
+    text-align: center; padding: 0 2rem 4rem;
+  }
+  .install-box {
+    display: inline-flex; align-items: center; gap: 0.75rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.8rem 1.5rem;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem; color: var(--accent);
+    cursor: pointer; transition: all 0.2s;
+    position: relative;
+  }
+  .install-box:hover { border-color: var(--accent); }
+  .install-box .prefix { color: var(--text-dim); }
+  .install-box .copy-hint {
+    font-family: -apple-system, sans-serif;
+    font-size: 0.75rem; color: var(--text-dim);
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--accent); margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800; letter-spacing: -0.02em;
+    line-height: 1.2; margin-bottom: 1.5rem;
+  }  .section-subtitle {
+    font-size: 1.1rem; color: var(--text-dim);
+    max-width: 650px; margin-bottom: 3rem;
+  }
+
+  /* ── PROBLEM ── */
+  .problem { border-top: 1px solid var(--border); }
+  .problem-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem; margin-top: 2rem;
+  }
+  .problem-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+    transition: border-color 0.3s;
+  }
+  .problem-card:hover { border-color: var(--red); }
+  .problem-card .icon { font-size: 1.5rem; margin-bottom: 1rem; }
+  .problem-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .problem-card p { color: var(--text-dim); font-size: 0.95rem; }
+
+  /* ── HOW IT WORKS ── */
+  .how-it-works { border-top: 1px solid var(--border); }
+  .flow {
+    display: flex; flex-direction: column; gap: 0;
+    position: relative; margin-top: 2rem;
+  }
+  .flow::before {
+    content: '';
+    position: absolute; left: 24px; top: 24px; bottom: 24px;
+    width: 2px; background: var(--border);
+  }  .flow-step {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+    padding: 1.5rem 0; position: relative;
+  }
+  .flow-step .number {
+    width: 48px; height: 48px; min-width: 48px;
+    border-radius: 50%; display: flex;
+    align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.1rem;
+    background: var(--surface2); border: 2px solid var(--accent);
+    color: var(--accent); z-index: 1;
+  }
+  .flow-step h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .flow-step p { color: var(--text-dim); font-size: 0.95rem; }
+  .flow-step code {
+    display: inline-block; margin-top: 0.5rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.3rem 0.7rem;
+    font-family: 'SF Mono', monospace; font-size: 0.85rem;
+    color: var(--accent);
+  }
+
+  /* ── FEATURES ── */
+  .features { border-top: 1px solid var(--border); }
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+    transition: all 0.3s;
+  }  .feature-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+  .feature-card .tag {
+    display: inline-block;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.2rem 0.6rem;
+    border-radius: 4px; margin-bottom: 1rem;
+  }
+  .tag-security { background: rgba(255,77,77,0.15); color: var(--red); }
+  .tag-performance { background: rgba(0,212,170,0.15); color: var(--accent); }
+  .tag-compliance { background: rgba(255,153,51,0.15); color: var(--orange); }
+  .tag-devex { background: rgba(77,159,255,0.15); color: var(--blue); }
+  .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .feature-card p { color: var(--text-dim); font-size: 0.95rem; }
+
+  /* ── COMPLIANCE ── */
+  .compliance { border-top: 1px solid var(--border); }
+  .compliance-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem; margin-top: 2rem;
+  }
+  .compliance-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem;
+    text-align: center;
+  }
+  .compliance-item .emoji { font-size: 2rem; margin-bottom: 0.75rem; }
+  .compliance-item h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .compliance-item p { color: var(--text-dim); font-size: 0.85rem; }
+  /* ── CODE PREVIEW ── */
+  .code-preview { border-top: 1px solid var(--border); }
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+    overflow-x: auto; margin-top: 2rem;
+  }
+  .code-block pre {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem; line-height: 1.8;
+    color: var(--text-dim);
+  }
+  .code-block .comment { color: #555; }
+  .code-block .key { color: var(--accent); }
+  .code-block .str { color: var(--orange); }
+  .code-block .url { color: var(--blue); }
+
+  /* ── USE CASES ── */
+  .use-cases { border-top: 1px solid var(--border); }
+  .use-case-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem; margin-top: 2rem;
+  }
+  .use-case {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+  }
+  .use-case .industry {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--accent); margin-bottom: 0.75rem;
+  }
+  .use-case h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .use-case p { color: var(--text-dim); font-size: 0.95rem; }
+  /* ── ARCHITECTURE ── */
+  .arch { border-top: 1px solid var(--border); text-align: center; }
+  .arch-diagram {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap;
+    margin: 3rem auto; max-width: 900px;
+  }
+  .arch-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.2rem 1.8rem;
+    text-align: center; min-width: 160px;
+  }
+  .arch-node.gateway {
+    border-color: var(--accent);
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+  .arch-node h4 { font-size: 0.9rem; font-weight: 700; }
+  .arch-node p { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
+  .arch-arrow {
+    font-size: 1.5rem; color: var(--text-dim);
+    padding: 0 0.8rem;
+  }
+
+  /* ── NUMBERS ── */
+  .numbers {
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .numbers-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem; margin-top: 2rem;
+  }  .stat h3 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800; color: var(--accent);
+  }
+  .stat p { color: var(--text-dim); font-size: 0.9rem; margin-top: 0.3rem; }
+
+  /* ── FINAL CTA ── */
+  .final-cta {
+    text-align: center; padding: 6rem 2rem 8rem;
+    max-width: 700px; margin: 0 auto;
+    border-top: 1px solid var(--border);
+  }
+  .final-cta h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800; letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+  .final-cta p {
+    color: var(--text-dim); font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    text-align: center; padding: 3rem 2rem;
+    color: var(--text-dim); font-size: 0.85rem;
+  }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    nav { padding: 0.8rem 1rem; }
+    nav .links a:not(.btn-nav) { display: none; }
+    section { padding: 4rem 1.2rem; }
+    .arch-diagram { flex-direction: column; }
+    .arch-arrow { transform: rotate(90deg); padding: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <span class="icon">&#9632;</span> AIR Blackbox
+  </div>
+  <div class="links">
+    <a href="#how">How It Works</a>
+    <a href="#features">Features</a>
+    <a href="#use-cases">Use Cases</a>
+    <a href="https://github.com/nostalgicskinco/air-blackbox-gateway" class="btn-nav">&#9733; Star on GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Open Source &middot; Apache 2.0
+  </div>  <h1>
+    Every LLM call.<br>
+    <span class="highlight">Recorded. Encrypted. Provable.</span>
+  </h1>
+  <p class="subhead">
+    Drop-in reverse proxy that creates tamper-evident audit trails for every API call to OpenAI, Anthropic, or any LLM provider. Zero code changes. Full compliance.
+  </p>
+  <div class="hero-ctas">
+    <a href="https://github.com/nostalgicskinco/air-blackbox-gateway" class="btn-primary">
+      &#9733; Star on GitHub
+    </a>
+    <a href="#how" class="btn-secondary">
+      See How It Works &darr;
+    </a>
+  </div>
+</div>
+
+<!-- INSTALL -->
+<div class="install">
+  <div class="install-box" onclick="navigator.clipboard.writeText('docker compose up -d')">
+    <span class="prefix">$</span> docker compose up -d
+    <span class="copy-hint">click to copy</span>
+  </div>
+</div>
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="section-label">The Problem</div>
+  <h2 class="section-title">Your AI is making decisions.<br>Can you prove what it said?</h2>
+  <p class="section-subtitle">
+    Every company using LLM APIs has the same blind spot. Calls go out. Responses come back. Nothing in between is recorded, verifiable, or auditable.
+  </p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="icon">&#128683;</div>
+      <h3>No Audit Trail</h3>
+      <p>When a regulator asks "what did your AI tell that customer?", you're digging through logs that don't exist. OpenAI doesn't store your prompts for you.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">&#128274;</div>
+      <h3>Plaintext API Keys in Transit</h3>
+      <p>Every developer on your team has the API key. Every request carries it in cleartext. One leaked key = unlimited spend on your dime.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">&#9888;</div>
+      <h3>Zero Replay Capability</h3>
+      <p>Model got updated? Output changed? Good luck proving what the old version said. Without recorded request/response pairs, you can't reproduce anything.</p>
+    </div>
+  </div>
+</section>
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how">
+  <div class="section-label">How It Works</div>
+  <h2 class="section-title">One line change. Complete coverage.</h2>
+  <p class="section-subtitle">
+    Point your app at the gateway instead of the provider. That's it. Everything else is automatic.
+  </p>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="number">1</div>
+      <div>
+        <h3>Your App Sends a Request</h3>
+        <p>Change your base URL from <code>api.openai.com</code> to <code>localhost:8080</code>. Same SDK. Same code. Same everything.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="number">2</div>
+      <div>
+        <h3>Gateway Authenticates &amp; Proxies</h3>
+        <p>The gateway checks your gateway key, forwards the request to the upstream provider, and streams the response back in real-time. Sub-millisecond overhead.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="number">3</div>
+      <div>
+        <h3>AIR Record Created (Background)</h3>
+        <p>A tamper-evident <strong>.air.json</strong> record is written asynchronously. Contains: request, response, model, tokens, timestamp, run ID. Never blocks your response.</p>
+      </div>
+    </div>    <div class="flow-step">
+      <div class="number">4</div>
+      <div>
+        <h3>Secrets Vault-Encrypted</h3>
+        <p>API keys and auth headers are stripped from the AIR record and encrypted separately. Even if someone gets the audit file, they can't extract credentials.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Built for production. Not a weekend hack.</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="tag tag-security">Security</div>
+      <h3>Gateway-Level Auth</h3>
+      <p>X-Gateway-Key header authentication. Your upstream API keys never leave the server. Developers hit the gateway, not the provider.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-security">Security</div>
+      <h3>Encrypted Vault</h3>
+      <p>Secrets are AES-encrypted and stored in a separate vault (local or S3-compatible). AIR records contain zero plaintext credentials.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-performance">Performance</div>
+      <h3>Non-Blocking Writes</h3>
+      <p>Audit records write in background goroutines. Vault writes are async. Your response latency is the provider's latency. Period.</p>
+    </div>    <div class="feature-card">
+      <div class="tag tag-performance">Performance</div>
+      <h3>SSE Streaming</h3>
+      <p>Full support for streaming responses (Server-Sent Events). Tokens stream to your app in real-time while the gateway records the complete response.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-compliance">Compliance</div>
+      <h3>Tamper-Evident Records</h3>
+      <p>Each AIR record includes cryptographic hashes. If anyone modifies a record after the fact, the hash breaks. Provable integrity.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-compliance">Compliance</div>
+      <h3>Replay &amp; Diff</h3>
+      <p>Replay recorded requests against current models. Compare outputs. Detect when a model update changed behavior. Regression testing for AI.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-devex">Developer Experience</div>
+      <h3>Docker Compose Ready</h3>
+      <p>One command to run. No MinIO dependency required. Works with local filesystem or S3-compatible storage. Your choice.</p>
+    </div>
+    <div class="feature-card">
+      <div class="tag tag-devex">Developer Experience</div>
+      <h3>Provider Agnostic</h3>
+      <p>Works with any OpenAI-compatible API. OpenAI, Anthropic (via proxy), Azure OpenAI, local models, custom endpoints. Same format.</p>
+    </div>
+  </div>
+</section>
+<!-- ARCHITECTURE -->
+<section class="arch">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">Simple by design</h2>
+  <div class="arch-diagram">
+    <div class="arch-node">
+      <h4>Your App</h4>
+      <p>SDK / HTTP client</p>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-node gateway">
+      <h4>AIR Gateway</h4>
+      <p>Auth + Record + Proxy</p>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-node">
+      <h4>LLM Provider</h4>
+      <p>OpenAI / Anthropic / etc</p>
+    </div>
+  </div>
+  <div class="arch-diagram" style="margin-top: 0;">
+    <div class="arch-node" style="border-color: var(--orange);">
+      <h4>AIR Records</h4>
+      <p>Tamper-evident JSON</p>
+    </div>
+    <div style="padding: 0 1.5rem; color: var(--text-dim);">+</div>
+    <div class="arch-node" style="border-color: var(--red);">
+      <h4>Secret Vault</h4>
+      <p>AES-encrypted keys</p>
+    </div>
+  </div>
+</section>
+<!-- USE CASES -->
+<section class="use-cases" id="use-cases">
+  <div class="section-label">Who It's For</div>
+  <h2 class="section-title">If you're calling an LLM API,<br>you probably need this.</h2>
+  <div class="use-case-grid">
+    <div class="use-case">
+      <div class="industry">Healthcare</div>
+      <h3>AI-Assisted Clinical Decisions</h3>
+      <p>When your AI suggests a diagnosis or treatment path, regulators will want to see exactly what was asked and what was returned. AIR gives you that record, encrypted and timestamped.</p>
+    </div>
+    <div class="use-case">
+      <div class="industry">Financial Services</div>
+      <h3>Algorithmic Compliance</h3>
+      <p>Trading desks and advisory platforms using LLMs for research or recommendations need audit trails that prove what the model said — not what someone remembers it said.</p>
+    </div>
+    <div class="use-case">
+      <div class="industry">Legal</div>
+      <h3>AI-Generated Documents</h3>
+      <p>Law firms using AI for contract review, brief drafting, or legal research need to prove the provenance of AI-assisted work. AIR records create that chain of custody.</p>
+    </div>
+    <div class="use-case">
+      <div class="industry">Enterprise / SaaS</div>
+      <h3>Customer-Facing AI Features</h3>
+      <p>Building a chatbot? An AI assistant? When a customer disputes what your AI told them, you need receipts. Every conversation, every token, every timestamp.</p>
+    </div>
+  </div>
+</section>
+<!-- CODE PREVIEW -->
+<section class="code-preview">
+  <div class="section-label">Integration</div>
+  <h2 class="section-title">Change one line. That's the integration.</h2>
+  <div class="code-block">
+<pre><span class="comment"># Before (direct to OpenAI)</span>
+client = OpenAI(
+    <span class="key">api_key</span>=<span class="str">"sk-..."</span>,
+    <span class="key">base_url</span>=<span class="url">"https://api.openai.com/v1"</span>
+)
+
+<span class="comment"># After (through AIR Gateway)</span>
+client = OpenAI(
+    <span class="key">api_key</span>=<span class="str">"sk-..."</span>,
+    <span class="key">base_url</span>=<span class="url">"http://localhost:8080/v1"</span>,
+    <span class="key">default_headers</span>={<span class="str">"X-Gateway-Key"</span>: <span class="str">"your-gateway-key"</span>}
+)</pre>
+  </div>
+</section>
+<!-- NUMBERS -->
+<section class="numbers">
+  <div class="section-label">By The Numbers</div>
+  <h2 class="section-title">Lightweight. Auditable. Open.</h2>
+  <div class="numbers-grid">
+    <div class="stat">
+      <h3>&lt;1ms</h3>
+      <p>Added latency per request</p>
+    </div>
+    <div class="stat">
+      <h3>0</h3>
+      <p>Code changes to your app</p>
+    </div>
+    <div class="stat">
+      <h3>100%</h3>
+      <p>Open source &middot; Apache 2.0</p>
+    </div>
+    <div class="stat">
+      <h3>&infin;</h3>
+      <p>Providers supported (any OpenAI-compatible API)</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<div class="final-cta">
+  <h2>Your AI calls deserve a <span style="color: var(--accent);">black box</span>.</h2>
+  <p>
+    Planes have them. Servers have them. Your LLM API calls should too.<br>
+    Star the repo. Deploy the gateway. Sleep better.
+  </p>  <div class="hero-ctas">
+    <a href="https://github.com/nostalgicskinco/air-blackbox-gateway" class="btn-primary">
+      &#9733; Star on GitHub
+    </a>
+    <a href="https://github.com/nostalgicskinco/air-blackbox-gateway/issues" class="btn-secondary">
+      Request a Feature
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    AIR Blackbox Gateway &middot; Built by
+    <a href="https://github.com/nostalgicskinco">@nostalgicskinco</a>
+    &middot; Apache 2.0 License
+  </p>
+</footer>
+
+</body>
+</html>

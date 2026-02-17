@@ -178,8 +178,8 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 | **Policy Engine** | [`agent-policy-engine`](https://github.com/nostalgicskinco/agent-policy-engine) | Risk-tiered autonomy, runtime enforcement ✅ |
 | **Collector** | [`genai-semantic-normalizer`](https://github.com/nostalgicskinco/genai-semantic-normalizer), [`prompt-vault-processor`](https://github.com/nostalgicskinco/prompt-vault-processor), [`opentelemetry-collector-processor-genai`](https://github.com/nostalgicskinco/opentelemetry-collector-processor-genai) | Normalize → vault → redact → metrics ✅ |
 | **Platform** | [`air-platform`](https://github.com/nostalgicskinco/air-platform) | Docker Compose orchestration + integration tests ✅ |
-| **Replay** | `agent-vcr`, `trace-regression-harness` | Record/replay, policy assertions |
-| **Governance** | `mcp-policy-gateway`, `mcp-security-scanner`, `agent-tool-sandbox`, `aibom-policy-engine`, `runtime-aibom-emitter` | Tool perimeter, SBOM, security scanning |
+| **Replay** | [`agent-vcr`](https://github.com/nostalgicskinco/agent-vcr), [`trace-regression-harness`](https://github.com/nostalgicskinco/trace-regression-harness) | Record/replay, policy assertions ✅ |
+| **Governance** | [`mcp-policy-gateway`](https://github.com/nostalgicskinco/mcp-policy-gateway), [`mcp-security-scanner`](https://github.com/nostalgicskinco/mcp-security-scanner), [`agent-tool-sandbox`](https://github.com/nostalgicskinco/agent-tool-sandbox), [`aibom-policy-engine`](https://github.com/nostalgicskinco/aibom-policy-engine), [`runtime-aibom-emitter`](https://github.com/nostalgicskinco/runtime-aibom-emitter) | Tool perimeter, SBOM, security scanning ✅ |
 | **Trust** | `air-blackbox-gateway/pkg/trust` | Audit chain, compliance mapping, evidence export |
 
 ## Operational Guarantees

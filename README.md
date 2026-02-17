@@ -17,7 +17,9 @@ When an autonomous agent sends an email, moves money, or changes data, someone w
 
 **Compliance & Security Teams** — Your organization is shipping AI features and regulators are asking questions. You need tamper-evident records that prove exactly what the AI saw, what it decided, and when. AIR records give you legal-grade reconstruction with SHA-256 checksums.
 
-**Startup CTOs** — You're moving fast but know that "we can't prove what our AI did" will eventually become a blocker for enterprise deals, SOC2, or insurance. This is the infrastructure you install now so you're not scrambling later.
+**Startup CTOs** — You're moving fast but know that "we can't prove what our AI did" will eventually become a blocker for enterprise deals, SOC 2, or insurance. This is the infrastructure you install now so you're not scrambling later.
+
+**Teams Building Autonomous Agents** — You're moving beyond chatbots toward agents that operate across hours or days, calling tools, making decisions, and interacting with real systems. You need risk-tiered autonomy, decision provenance, and the ability to replay any agent run. The trust layer gives you compliance-grade evidence that your agent did the right thing — or a clear record of exactly where it didn't.
 
 ## How It Works
 
@@ -44,8 +46,11 @@ This is an **accountability** tool — it answers *"what exactly happened and ca
 | Prompt/response storage | In their cloud | In **your** vault (S3/MinIO) |
 | PII-safe traces | ❌ (stores raw content) | ✅ (vault references only) |
 | Deterministic replay | ❌ | ✅ (`replayctl`) |
-| Tamper-evident records | ❌ | ✅ (SHA-256 checksums) |
+| Tamper-evident records | ❌ | ✅ (SHA-256 + HMAC chain) |
 | Legal-grade reconstruction | ❌ | ✅ |
+| Compliance reporting (SOC 2, ISO 27001) | ❌ | ✅ (22 controls, auto-evaluated) |
+| Signed evidence export | ❌ | ✅ (HMAC-attested packages) |
+| Agent guardrails & kill-switch | ❌ | ✅ (cost, loop, tool, PII) |
 
 ## Quick Start (5 minutes)
 
@@ -167,10 +172,11 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 
 | Layer | Repos | Role |
 |---|---|---|
-| **Gateway** | `air-blackbox-gateway` (this repo) | Proxy + run_id + vault + AIR records |
+| **Gateway** | `air-blackbox-gateway` (this repo) | Proxy + run_id + vault + AIR records + guardrails + trust |
 | **Collector** | `genai-semantic-normalizer`, `prompt-vault-processor`, `opentelemetry-collector-processor-genai`, `genai-cost-slo` | Normalize → vault → redact → metrics |
 | **Replay** | `agent-vcr`, `trace-regression-harness` | Record/replay, policy assertions |
 | **Governance** | `mcp-policy-gateway`, `mcp-security-scanner`, `agent-tool-sandbox`, `aibom-policy-engine`, `runtime-aibom-emitter` | Tool perimeter, SBOM, security scanning |
+| **Trust** | `air-blackbox-gateway/pkg/trust` | Audit chain, compliance mapping, evidence export |
 
 ## Operational Guarantees
 
@@ -223,36 +229,82 @@ An AIR record captures everything needed to reconstruct an incident or replay a 
 
 **Chain of custody:** Every AIR record includes a creation timestamp, checksums, and the identity of the recording system. This isn't just tamper-evidence (proving it wasn't modified) — it's provenance tracking (proving it wasn't mishandled). That's what regulators and lawyers actually verify.
 
+## Trust Layer
+
+The trust layer turns AIR records into cryptographically verifiable audit trails, evaluates your configuration against compliance frameworks, and packages everything into exportable evidence bundles.
+
+### Audit Chain
+
+Every proxied request is appended to an HMAC-SHA256 audit chain. Each entry links to the previous entry's hash, creating a tamper-proof sequence — modify any record and the chain breaks from that point forward. This is the same integrity model used by certificate transparency logs and blockchain systems, without the overhead.
+
+### Compliance Reporting
+
+The gateway evaluates your live configuration against 22 controls across two frameworks:
+
+- **SOC 2 Trust Service Criteria** — 12 controls (CC6.1, CC6.3, CC7.2, CC7.3, CC8.1, CC4.1, CC5.1, CC7.4, CC2.1, A1.2, CC6.6, CC3.1)
+- **ISO 27001 Annex A** — 10 controls (A.12.4.1, A.12.4.3, A.14.2.2, A.18.1.3, A.9.1.1, A.10.1.1, A.12.1.1, A.16.1.2, A.12.6.1, A.12.4.4)
+
+Controls pass or fail based on what's actually enabled (vault, guardrails, analytics, audit chain). No self-assessment forms — the gateway evaluates itself.
+
+### Evidence Export
+
+`GET /v1/audit/export` generates a signed evidence package containing the full audit chain, compliance report, time range, and an HMAC attestation. Hand it to your auditor as a single JSON document. The attestation can be independently verified against your signing key.
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/v1/audit` | GET | Chain integrity status + live compliance evaluation |
+| `/v1/audit/export` | GET | Signed evidence package for regulators |
+
+Both endpoints require the `X-Gateway-Key` header.
+
 ## Roadmap
 
-AIR Blackbox Gateway is building toward becoming an **operational trust layer for AI systems**. Here's what's coming:
+AIR Blackbox Gateway is an **operational trust layer for autonomous AI systems**. As agents move from chatbots toward durable, multi-step systems that operate across days and interact with real software, the hardest problems are not model intelligence — they are state management, provenance, reproducibility, access control, and measurable safety.
 
-| Phase | Layer | Capability | Status |
+### What's Shipped
+
+| Version | Layer | Capability | Status |
 |---|---|---|---|
-| **Now** | Visibility | Recording, replay, vault, OTel pipeline, 8 providers | ✅ Shipped |
-| **Now** | Visibility | Non-blocking proxy with streaming, auth, timeout safety | ✅ Shipped |
-| **Next** | Visibility | Selective recording modes (metadata-only, hash-only, field redaction) | In progress |
-| **Next** | Visibility | Human-readable incident reports (trace data → narrative) | Planned |
-| **Next** | Visibility | Backfill ingestion (reconstruct from existing logs) | Planned |
-| **Now** | Detection | Runaway agent kill-switch and cost guardrails (`guardrails.yaml`) | ✅ Shipped |
-| **Now** | Detection | Loop detection (recursive planner traps, tool retry storms) | ✅ Shipped |
-| **Now** | Detection | Token explosion and cost anomaly alerts | ✅ Shipped |
-| **Now** | Detection | Slack/webhook alerting with incident narratives | ✅ Shipped |
-| **Now** | Prevention | Automatic policy enforcement (block tool, redact data, downgrade model) | ✅ Shipped |
-| **Now** | Prevention | Human-in-the-loop approval workflows | ✅ Shipped |
-| **Now** | Prevention | Tool allowlists, environment segmentation, PII blocking | ✅ Shipped |
-| **v0.6** | Optimization | Cross-agent performance analytics | ✅ Shipped |
-| **v0.6** | Optimization | Automatic model routing and prompt recommendations | ✅ Shipped |
-| **v0.6** | Optimization | Agent failure taxonomy and pattern library | ✅ Shipped |
-| **v0.7** | Trust Layer | Tamper-proof cryptographic audit chain (HMAC-SHA256) | ✅ Shipped |
-| **v0.7** | Trust Layer | Compliance reporting (SOC 2 + ISO 27001 control mapping) | ✅ Shipped |
-| **v0.7** | Trust Layer | Signed evidence package export for regulators | ✅ Shipped |
-| **Future** | Trust Layer | Hosted evidence storage (commercial trust layer) | Roadmap |
-| **Future** | Trust Layer | Organization dashboards, access policies | Roadmap |
+| **v0.1** | Visibility | Recording, replay, vault, OTel pipeline, 8 providers | ✅ Shipped |
+| **v0.1** | Visibility | Non-blocking proxy with streaming, auth, timeout safety | ✅ Shipped |
+| **v0.4** | Detection | Runaway agent kill-switch and cost guardrails | ✅ Shipped |
+| **v0.4** | Detection | Loop detection, token explosion alerts, webhook alerting | ✅ Shipped |
+| **v0.5** | Prevention | Policy enforcement, PII blocking, tool allowlists | ✅ Shipped |
+| **v0.5** | Prevention | Human-in-the-loop approval workflows | ✅ Shipped |
+| **v0.6** | Optimization | Cross-agent analytics, model routing, failure taxonomy | ✅ Shipped |
+| **v0.7** | Trust | Cryptographic audit chain (HMAC-SHA256) | ✅ Shipped |
+| **v0.7** | Trust | SOC 2 + ISO 27001 compliance reporting (22 controls) | ✅ Shipped |
+| **v0.7** | Trust | Signed evidence package export | ✅ Shipped |
 
-**The value ladder:** Visibility (what happened) → Detection (something is wrong) → Prevention (stop it automatically) → Optimization (make it better) → Trust Layer (prove it to regulators). Each layer builds on the one below it.
+### What's Next (2026–2029)
 
-The open-source protocol layer (recording, replay, detection, OTel processors, CLI) will always be Apache-2.0. The commercial trust and governance layers (hosted storage, ledger, compliance reporting, optimization engine) are separate future offerings.
+The roadmap is organized around the principle that autonomous agents need **systems and controls**, not just smarter models. Each phase builds trust infrastructure that becomes mandatory as agents gain more autonomy.
+
+| Phase | Timeline | Focus | Key Deliverables |
+|---|---|---|---|
+| **Foundation** | Q1–Q2 2026 | Episode model + durable state | Replayable episode schema; durable step persistence with pause/resume; idempotent tool calls |
+| **Risk-Tiered Autonomy** | Q3–Q4 2026 | Controllable autonomy | Cost-of-error × confidence gating; approval workflows by risk tier; sandbox replay harness with staging digital twins |
+| **Multi-Agent Orchestration** | Q1–Q2 2027 | Reliability at scale | Planner/executor/critic roles; escalation policies; cross-agent shared state; integration hardening |
+| **External Trust Wedge** | Q3–Q4 2027 | Go-to-market | Trust layer as distributable add-on; onboarding templates; SOC 2 control inventory; incident runbooks |
+| **Autonomy Expansion** | 2028 | Limited autonomy in production | End-to-end low-risk task completion with post-hoc review; cost/latency optimization; marketplace connectors |
+| **Enterprise Scale** | Q4 2028–Q1 2029 | Enterprise readiness | Provenance search and replay debugging; multi-tenant isolation; SCIM-based identity provisioning |
+
+### The Value Ladder
+
+```
+Visibility (what happened)
+  → Detection (something is wrong)
+    → Prevention (stop it automatically)
+      → Optimization (make it better)
+        → Trust (prove it to regulators)
+          → Autonomy (let the agent act, safely)
+```
+
+Each layer builds on the one below it. You can't detect problems you can't see. You can't prevent what you can't detect. You can't optimize what you can't control. You can't trust what you can't prove. And you can't grant autonomy without trust.
+
+The open-source protocol layer (recording, replay, detection, prevention, optimization, trust) is Apache-2.0. Future commercial services (hosted evidence storage, managed compliance, enterprise identity, multi-tenant governance) are separate offerings.
 
 ## Configuration
 
@@ -271,13 +323,15 @@ The open-source protocol layer (recording, replay, detection, OTel processors, C
 
 ## Project Philosophy
 
-We believe AI systems should be observable and accountable by default. As autonomous agents gain the ability to send emails, move money, and change data, organizations need an open standard for recording and replaying AI system behavior — not another proprietary lock-in.
+Autonomous AI agents are moving from chatbots toward durable, multi-step systems that operate across days, interact with real software, and are governed by risk controls rather than by prompts alone. The hardest problems in this shift are not model intelligence — they are operational trust: state management, provenance, reproducibility, access control, and measurable safety.
 
-AIR Blackbox Gateway provides the open recording protocol. The recorder, replay engine, OTel processors, and CLI tools are Apache-2.0 licensed so that any team can adopt them without legal friction. Future governance and compliance services (hosted evidence storage, tamper-proof ledgers, legal hold, regulator exports) may be provided separately as commercial offerings.
+AIR Blackbox Gateway exists because every organization deploying agents will eventually need to answer three questions: *What did the AI do? Can we prove it? Can we control what it does next?* The five shipped layers (visibility, detection, prevention, optimization, trust) answer all three today. The roadmap extends toward the sixth: **safe autonomy** — letting agents act independently within provable boundaries.
+
+The open-source protocol layer will always be Apache-2.0. We believe the path to adoption is:
 
 **Open protocol → common dependency → operational expectation → compliance requirement.**
 
-That's the path. And it only works if the foundation is genuinely open.
+That only works if the foundation is genuinely open, genuinely useful, and genuinely trustworthy.
 
 ## License
 

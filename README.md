@@ -180,7 +180,7 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 | **Platform** | [`air-platform`](https://github.com/nostalgicskinco/air-platform) | Docker Compose orchestration + integration tests ✅ |
 | **Replay** | [`agent-vcr`](https://github.com/nostalgicskinco/agent-vcr), [`trace-regression-harness`](https://github.com/nostalgicskinco/trace-regression-harness) | Record/replay, policy assertions ✅ |
 | **Governance** | [`mcp-policy-gateway`](https://github.com/nostalgicskinco/mcp-policy-gateway), [`mcp-security-scanner`](https://github.com/nostalgicskinco/mcp-security-scanner), [`agent-tool-sandbox`](https://github.com/nostalgicskinco/agent-tool-sandbox), [`aibom-policy-engine`](https://github.com/nostalgicskinco/aibom-policy-engine), [`runtime-aibom-emitter`](https://github.com/nostalgicskinco/runtime-aibom-emitter) | Tool perimeter, SBOM, security scanning ✅ |
-| **Trust** | `air-blackbox-gateway/pkg/trust` | Audit chain, compliance mapping, evidence export |
+| **Trust** | `air-blackbox-gateway/pkg/trust` | Audit chain, compliance mapping, evidence export ✅ |
 
 ## Operational Guarantees
 

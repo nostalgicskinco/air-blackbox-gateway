@@ -175,7 +175,7 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 | **Gateway** | `air-blackbox-gateway` (this repo) | Proxy + run_id + vault + AIR records + guardrails + trust |
 | **Episode Ledger** | [`agent-episode-store`](https://github.com/nostalgicskinco/agent-episode-store) | Groups AIR records into replayable task-level episodes ✅ |
 | **Eval Harness** | [`eval-harness`](https://github.com/nostalgicskinco/eval-harness) | Replays episodes, scores results, detects regressions ✅ |
-| **Policy Engine** | `agent-policy-engine` | Risk-tiered autonomy, runtime enforcement 📋 |
+| **Policy Engine** | [`agent-policy-engine`](https://github.com/nostalgicskinco/agent-policy-engine) | Risk-tiered autonomy, runtime enforcement ✅ |
 | **Collector** | `genai-semantic-normalizer`, `prompt-vault-processor`, `opentelemetry-collector-processor-genai`, `genai-cost-slo` | Normalize → vault → redact → metrics |
 | **Replay** | `agent-vcr`, `trace-regression-harness` | Record/replay, policy assertions |
 | **Governance** | `mcp-policy-gateway`, `mcp-security-scanner`, `agent-tool-sandbox`, `aibom-policy-engine`, `runtime-aibom-emitter` | Tool perimeter, SBOM, security scanning |

@@ -40,7 +40,7 @@ docker compose up --build
 **2. Install the SDK**
 
 ```bash
-pip install air-sdk
+pip install air-blackbox-sdk
 ```
 
 **3. Record everything**

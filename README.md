@@ -88,6 +88,26 @@ curl http://localhost:8080/v1/chat/completions \
 
 The response includes an `x-run-id` header — that's your audit trail.
 
+### Python SDK (recommended)
+
+```bash
+pip install air-sdk
+```
+
+```python
+from openai import OpenAI
+import air
+
+client = air.air_wrap(OpenAI())  # One line — every call now records through AIR
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "What is a flight recorder?"}],
+)
+```
+
+Also works with [LangChain](https://github.com/nostalgicskinco/air-sdk-python#langchain-2-lines) and [CrewAI](https://github.com/nostalgicskinco/air-sdk-python#crewai-swap-one-import). See the [SDK repo](https://github.com/nostalgicskinco/air-sdk-python) for full docs.
+
 ### 4. View traces
 
 Open Jaeger at [http://localhost:16686](http://localhost:16686) — search for service `air-blackbox-gateway`.
@@ -181,6 +201,7 @@ AIR Blackbox Gateway is the **spine** of the [nostalgicskinco](https://github.co
 | **Replay** | [`agent-vcr`](https://github.com/nostalgicskinco/agent-vcr), [`trace-regression-harness`](https://github.com/nostalgicskinco/trace-regression-harness) | Record/replay, policy assertions ✅ |
 | **Governance** | [`mcp-policy-gateway`](https://github.com/nostalgicskinco/mcp-policy-gateway), [`mcp-security-scanner`](https://github.com/nostalgicskinco/mcp-security-scanner), [`agent-tool-sandbox`](https://github.com/nostalgicskinco/agent-tool-sandbox), [`aibom-policy-engine`](https://github.com/nostalgicskinco/aibom-policy-engine), [`runtime-aibom-emitter`](https://github.com/nostalgicskinco/runtime-aibom-emitter) | Tool perimeter, SBOM, security scanning ✅ |
 | **Trust** | `air-blackbox-gateway/pkg/trust` | Audit chain, compliance mapping, evidence export ✅ |
+| **SDK** | [`air-sdk-python`](https://github.com/nostalgicskinco/air-sdk-python) | Python integrations for OpenAI, LangChain, CrewAI ✅ |
 
 ## Operational Guarantees
 

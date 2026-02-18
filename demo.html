@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR Blackbox Gateway — Interactive Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a28;
+    --border: #2a2a3d;
+    --text: #e0e0f0;
+    --text-dim: #8888aa;
+    --accent: #00ADD8;
+    --accent-glow: #00ADD844;
+    --red: #ff4466;
+    --red-glow: #ff446644;
+    --green: #44ffaa;
+    --green-glow: #44ffaa44;
+    --orange: #ffaa44;
+    --orange-glow: #ffaa4444;
+    --blue: #44aaff;
+    --blue-glow: #44aaff44;
+    --purple: #7c5cfc;
+    --purple-glow: #7c5cfc44;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── Progress Bar ── */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--green), var(--orange));
+    z-index: 1000; transition: width 0.6s ease;
+  }
+
+  /* ── Scene Container ── */
+  #scene-container {
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  .scene {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; padding: 40px;
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+  }
+  .scene.active {
+    opacity: 1; transform: translateY(0);
+    pointer-events: all;
+  }
+  .scene.exit {
+    opacity: 0; transform: translateY(-30px);
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; text-align: center; }
+  h2 { font-size: 2.2rem; font-weight: 700; line-height: 1.2; text-align: center; }
+  h3 { font-size: 1.4rem; font-weight: 600; color: var(--text-dim); text-align: center; }
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--green) 50%, var(--orange) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ── Code Block ── */
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    max-width: 720px;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  .code-block .line {
+    opacity: 0; transform: translateX(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    white-space: pre;
+  }
+  .code-block .line.visible { opacity: 1; transform: translateX(0); }
+  .code-block .line.highlight { background: var(--accent-glow); margin: 0 -28px; padding: 0 28px; border-radius: 4px; }
+
+  .code-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+  .code-title { font-size: 0.75rem; color: var(--text-dim); margin-left: 8px; }
+
+  /* ── syntax colors ── */
+  .kw { color: #c678dd; }
+  .fn { color: #61afef; }
+  .str { color: #98c379; }
+  .cm { color: #5c6370; font-style: italic; }
+  .num { color: #d19a66; }
+  .op { color: #56b6c2; }
+  .var { color: #e5c07b; }
+  .cls { color: #e06c75; }
+
+  /* ── Flow Diagram ── */
+  .flow-container {
+    display: flex; align-items: center; gap: 0;
+    flex-wrap: nowrap; justify-content: center;
+    margin: 30px 0;
+  }
+  .flow-node {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    opacity: 0; transform: scale(0.8);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .flow-node.visible { opacity: 1; transform: scale(1); }
+  .flow-node.active-node .flow-icon { border-color: var(--orange); box-shadow: 0 0 20px var(--orange-glow); }
+  .flow-node.pass .flow-icon { border-color: var(--green); box-shadow: 0 0 20px var(--green-glow); }
+  .flow-node.blocked .flow-icon { border-color: var(--red); box-shadow: 0 0 20px var(--red-glow); }
+
+  .flow-icon {
+    width: 64px; height: 64px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    background: var(--surface);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .flow-label { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
+  .flow-arrow {
+    font-size: 1.2rem; color: var(--text-dim); margin: 0 6px;
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .flow-arrow.visible { opacity: 1; }
+
+  /* ── Live Terminal ── */
+  .terminal {
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    max-width: 700px;
+    width: 100%;
+    min-height: 180px;
+  }
+  .terminal .prompt { color: var(--green); }
+  .terminal .output { color: var(--text-dim); }
+  .terminal .error { color: var(--red); }
+  .terminal .success { color: var(--green); }
+  .terminal .warn { color: var(--orange); }
+  .terminal .info { color: var(--blue); }
+  .term-line {
+    opacity: 0; transform: translateY(5px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .term-line.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── Stats Grid ── */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 20px; max-width: 800px; width: 100%;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .stat-card.visible { opacity: 1; transform: translateY(0); }
+  .stat-number { font-size: 2.4rem; font-weight: 800; }
+  .stat-label { font-size: 0.8rem; color: var(--text-dim); margin-top: 6px; font-weight: 600; }
+
+  /* ── Pill / Badge ── */
+  .pill {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .pill-accent { background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent); }
+  .pill-red { background: var(--red-glow); color: var(--red); border: 1px solid var(--red); }
+  .pill-green { background: var(--green-glow); color: var(--green); border: 1px solid var(--green); }
+  .pill-orange { background: var(--orange-glow); color: var(--orange); border: 1px solid var(--orange); }
+  .pill-purple { background: var(--purple-glow); color: var(--purple); border: 1px solid var(--purple); }
+
+  /* ── Comparison Table ── */
+  .compare-table {
+    border-collapse: collapse;
+    max-width: 720px; width: 100%;
+    font-size: 0.85rem;
+  }
+  .compare-table th {
+    text-align: left; padding: 10px 16px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-dim); font-weight: 600;
+    text-transform: uppercase; font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+  .compare-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-table tr { opacity: 0; transform: translateX(-10px); transition: opacity 0.3s ease, transform 0.3s ease; }
+  .compare-table tr.visible { opacity: 1; transform: translateX(0); }
+
+  /* ── HMAC Chain ── */
+  .chain-blocks {
+    display: flex; gap: 4px; align-items: center;
+    flex-wrap: nowrap; justify-content: center;
+    margin: 20px 0;
+  }
+  .chain-block {
+    width: 54px; height: 54px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--accent);
+    background: var(--surface);
+    opacity: 0; transform: scale(0.7);
+    transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .chain-block.visible { opacity: 1; transform: scale(1); }
+  .chain-block.verified { border-color: var(--green); color: var(--green); box-shadow: 0 0 12px var(--green-glow); }
+  .chain-block.tampered { border-color: var(--red); color: var(--red); box-shadow: 0 0 12px var(--red-glow); }
+  .chain-link { color: var(--text-dim); font-size: 0.7rem; opacity: 0; transition: opacity 0.2s ease; }
+  .chain-link.visible { opacity: 1; }
+
+  /* ── Spacers ── */
+  .gap-sm { height: 16px; }
+  .gap-md { height: 28px; }
+  .gap-lg { height: 40px; }
+
+  /* ── Floating particles ── */
+  .particle {
+    position: fixed;
+    width: 4px; height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    opacity: 0.15;
+    pointer-events: none;
+    animation: float-particle 8s infinite ease-in-out;
+  }
+  @keyframes float-particle {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    25% { transform: translateY(-30px) translateX(15px); }
+    50% { transform: translateY(-10px) translateX(-20px); }
+    75% { transform: translateY(-40px) translateX(10px); }
+  }
+
+  /* ── Navigation ── */
+  #nav {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px; z-index: 100;
+  }
+  .nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-btn:disabled:hover { border-color: var(--border); background: var(--surface); }
+  #scene-counter { font-size: 0.8rem; color: var(--text-dim); font-weight: 600; min-width: 50px; text-align: center; }
+
+  .typewriter { border-right: 2px solid var(--accent); padding-right: 4px; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { border-color: transparent; } }
+</style>
+</head>
+<body>
+
+<!-- Floating particles -->
+<div id="particles"></div>
+
+<!-- Progress bar -->
+<div id="progress-bar" style="width:0%"></div>
+
+<!-- ═══════════════ SCENE 0 — TITLE ═══════════════ -->
+<div id="scene-container">
+<div class="scene active" id="scene-0">
+  <div class="pill pill-accent" style="margin-bottom: 20px;">AIR BLACKBOX</div>
+  <h1><span class="gradient-text">Gateway</span></h1>
+  <div class="gap-sm"></div>
+  <h3>The flight recorder for AI systems</h3>
+  <div class="gap-lg"></div>
+  <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+    <span class="pill pill-green">200+ Tests</span>
+    <span class="pill pill-accent">Go 1.22+</span>
+    <span class="pill pill-orange">Apache-2.0</span>
+  </div>
+  <div class="gap-lg"></div>
+  <div style="color:var(--text-dim); font-size:0.85rem;">Press <span class="mono" style="color:var(--accent)">→</span> or click <strong>Next</strong> to begin</div>
+</div>
+
+<!-- ═══════════════ SCENE 1 — THE QUESTION ═══════════════ -->
+<div class="scene" id="scene-1">
+  <h2>The Question</h2>
+  <div class="gap-sm"></div>
+  <h3 style="max-width:650px;">Your AI agent just sent an email, moved money, or changed production data.</h3>
+  <div class="gap-md"></div>
+  <div class="code-block" style="max-width:600px; text-align:center; border-color:var(--orange);">
+    <div class="line visible" style="text-align:center; font-size:1.1rem; color:var(--orange); font-weight:600;">"Show me exactly what it saw and why it made that decision."</div>
+  </div>
+  <div class="gap-lg"></div>
+  <div class="stats-grid">
+    <div class="stat-card" data-delay="200"><div class="stat-number" style="color:var(--red)">0%</div><div class="stat-label">Can Replay</div></div>
+    <div class="stat-card" data-delay="400"><div class="stat-number" style="color:var(--red)">0</div><div class="stat-label">Tamper-Proof</div></div>
+    <div class="stat-card" data-delay="600"><div class="stat-number" style="color:var(--red)">0</div><div class="stat-label">PII Protected</div></div>
+    <div class="stat-card" data-delay="800"><div class="stat-number" style="color:var(--red)">0</div><div class="stat-label">Compliance Controls</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 2 — THE FIX ═══════════════ -->
+<div class="scene" id="scene-2">
+  <h2>The Fix: <span class="gradient-text">One Line</span></h2>
+  <div class="gap-md"></div>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+      <span class="code-title">main.py</span>
+    </div>
+    <div class="line" data-delay="200"><span class="kw">from</span> openai <span class="kw">import</span> OpenAI</div>
+    <div class="line" data-delay="400"><span class="kw">import</span> air</div>
+    <div class="line" data-delay="600"></div>
+    <div class="line highlight" data-delay="800"><span class="cm"># One line. Every AI decision is now recorded.</span></div>
+    <div class="line highlight" data-delay="1000">client = air.<span class="fn">air_wrap</span>(<span class="cls">OpenAI</span>())</div>
+    <div class="line" data-delay="1200"></div>
+    <div class="line" data-delay="1400"><span class="cm"># Your code runs as normal</span></div>
+    <div class="line" data-delay="1600">response = client.chat.completions.<span class="fn">create</span>(</div>
+    <div class="line" data-delay="1800">    model=<span class="str">"gpt-4o-mini"</span>,</div>
+    <div class="line" data-delay="2000">    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"..."</span>}]</div>
+    <div class="line" data-delay="2200">)</div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 3 — HOW IT WORKS ═══════════════ -->
+<div class="scene" id="scene-3">
+  <h2>How It Works</h2>
+  <div class="gap-sm"></div>
+  <h3>Drop-in proxy between your agent and any LLM provider</h3>
+  <div class="gap-lg"></div>
+  <div class="flow-container" id="flow-arch">
+    <div class="flow-node" data-delay="200">
+      <div class="flow-icon">🤖</div>
+      <div class="flow-label">Your Agent</div>
+    </div>
+    <div class="flow-arrow" data-delay="400">→</div>
+    <div class="flow-node" data-delay="500">
+      <div class="flow-icon" style="border-color:var(--accent);">✈️</div>
+      <div class="flow-label">AIR<br>Gateway</div>
+    </div>
+    <div class="flow-arrow" data-delay="700">→</div>
+    <div class="flow-node" data-delay="800">
+      <div class="flow-icon">🧀</div>
+      <div class="flow-label">LLM<br>Provider</div>
+    </div>
+  </div>
+  <div class="gap-sm"></div>
+  <div class="flow-container" id="flow-record">
+    <div class="flow-node" data-delay="1200">
+      <div class="flow-icon">🏦</div>
+      <div class="flow-label">Vault<br>(MinIO/S3)</div>
+    </div>
+    <div class="flow-arrow" data-delay="1400">+</div>
+    <div class="flow-node" data-delay="1500">
+      <div class="flow-icon">🌋</div>
+      <div class="flow-label">.air.json<br>Record</div>
+    </div>
+    <div class="flow-arrow" data-delay="1700">+</div>
+    <div class="flow-node" data-delay="1800">
+      <div class="flow-icon">📡</div>
+      <div class="flow-label">OTel<br>Traces</div>
+    </div>
+    <div class="flow-arrow" data-delay="2000">+</div>
+    <div class="flow-node" data-delay="2100">
+      <div class="flow-icon">🔗</div>
+      <div class="flow-label">HMAC<br>Chain</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 4 — VAULT ═══════════════ -->
+<div class="scene" id="scene-4">
+  <h2><span style="color:var(--accent)">Prompt Vault</span> — Your Data, Your Infrastructure</h2>
+  <div class="gap-sm"></div>
+  <h3>Prompts and completions stay in <strong>your</strong> MinIO/S3 — never a third-party cloud</h3>
+  <div class="gap-md"></div>
+  <div class="terminal" id="vault-terminal">
+    <div class="term-line" data-delay="300"><span class="prompt">agent →</span> <span class="output">chat.completions.create("What is a flight recorder?")</span></div>
+    <div class="term-line" data-delay="800"><span class="info">[AIR:gateway]</span> Assigned run_id: 550e8400-e29b-...</div>
+    <div class="term-line" data-delay="1200"><span class="info">[AIR:vault]</span> Storing request → <span class="success">vault://air-runs/550e8400.../request.json</span></div>
+    <div class="term-line" data-delay="1600"><span class="info">[AIR:vault]</span> Storing response → <span class="success">vault://air-runs/550e8400.../response.json</span></div>
+    <div class="term-line" data-delay="2000"><span class="info">[AIR:otel]</span> Trace span emitted — contains <span class="warn">vault references only</span>, no raw content</div>
+    <div class="term-line" data-delay="2400"><span class="info">[AIR:record]</span> <span class="success">550e8400.air.json written — checksums: sha256:a1b2c3...</span></div>
+  </div>
+  <div class="gap-md"></div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+    <span class="pill pill-accent">Full Vault</span>
+    <span class="pill pill-green">Metadata Only</span>
+    <span class="pill pill-orange">Hash Only</span>
+    <span class="pill pill-purple">Selective Redaction</span>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 5 — AUDIT CHAIN ═══════════════ -->
+<div class="scene" id="scene-5">
+  <h2><span style="color:var(--green)">Tamper-Proof Audit Chain</span></h2>
+  <div class="gap-sm"></div>
+  <h3>HMAC-SHA256 signed entries — each references the previous hash</h3>
+  <div class="gap-md"></div>
+  <div class="chain-blocks" id="chain-blocks">
+    <div class="chain-block" data-delay="200">#0<br><span style="font-size:0.5rem">a7f3...</span></div>
+    <div class="chain-link" data-delay="400">→</div>
+    <div class="chain-block" data-delay="500">#1<br><span style="font-size:0.5rem">c2e8...</span></div>
+    <div class="chain-link" data-delay="700">→</div>
+    <div class="chain-block" data-delay="800">#2<br><span style="font-size:0.5rem">9b1d...</span></div>
+    <div class="chain-link" data-delay="1000">→</div>
+    <div class="chain-block" data-delay="1100">#3<br><span style="font-size:0.5rem">f4a6...</span></div>
+    <div class="chain-link" data-delay="1300">→</div>
+    <div class="chain-block" data-delay="1400">#4<br><span style="font-size:0.5rem">1e7c...</span></div>
+    <div class="chain-link" data-delay="1600">→</div>
+    <div class="chain-block" data-delay="1700">#5<br><span style="font-size:0.5rem">8d2b...</span></div>
+    <div class="chain-link" data-delay="1900">→</div>
+    <div class="chain-block" data-delay="2000">#6<br><span style="font-size:0.5rem">3f9a...</span></div>
+  </div>
+  <div class="gap-md"></div>
+  <div class="terminal" id="chain-terminal">
+    <div class="term-line" data-delay="2600"><span class="prompt">>>> </span><span class="output">GET /v1/audit</span></div>
+    <div class="term-line" data-delay="3200"><span class="success">{"chain_valid": true, "total_entries": 42, "soc2_controls": 12, "iso27001_controls": 10}</span></div>
+    <div class="term-line" data-delay="3800"><span class="info"># Modify any record and the chain breaks</span></div>
+    <div class="term-line" data-delay="4200"><span class="error">{"chain_valid": false, "broken_at": 17, "expected": "a7f3c2...", "got": "000000..."}</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 6 — GUARDRAILS ═══════════════ -->
+<div class="scene" id="scene-6">
+  <h2><span style="color:var(--orange)">Guardrails</span> — Runtime Safety</h2>
+  <div class="gap-sm"></div>
+  <h3>Cost limits, loop detection, PII blocking, tool allowlists, and kill-switch</h3>
+  <div class="gap-md"></div>
+  <div class="terminal" id="guardrails-terminal">
+    <div class="term-line" data-delay="300"><span class="prompt">agent →</span> <span class="output">Request #47 to gpt-4o (total: $12.40)</span></div>
+    <div class="term-line" data-delay="800"><span class="warn">[AIR:guardrails]</span> <span class="warn">Cost approaching limit ($15.00) — 82% consumed</span></div>
+    <div class="term-line" data-delay="1300"><span class="prompt">agent →</span> <span class="output">Request #48: same prompt as #44, #45, #46, #47</span></div>
+    <div class="term-line" data-delay="1800"><span class="error">[AIR:guardrails]</span> <span class="error">LOOP DETECTED — 4 identical requests in sequence</span></div>
+    <div class="term-line" data-delay="2300"><span class="error">[AIR:guardrails]</span> <span class="error">KILL-SWITCH activated — agent halted</span></div>
+    <div class="term-line" data-delay="2800"><span class="info">[AIR:audit]</span> Logged: guardrail_triggered | type: loop_detection | action: kill</div>
+  </div>
+  <div class="gap-md"></div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+    <span class="pill pill-red">Kill-Switch</span>
+    <span class="pill pill-orange">Cost Limits</span>
+    <span class="pill pill-orange">Loop Detection</span>
+    <span class="pill pill-purple">PII Blocking</span>
+    <span class="pill pill-green">Tool Allowlists</span>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 7 — COMPLIANCE ═══════════════ -->
+<div class="scene" id="scene-7">
+  <h2><span style="color:var(--purple)">Compliance Reporting</span></h2>
+  <div class="gap-sm"></div>
+  <h3>22 controls. SOC 2 + ISO 27001. Self-evaluating — no forms to fill.</h3>
+  <div class="gap-md"></div>
+  <div class="terminal" id="compliance-terminal">
+    <div class="term-line" data-delay="300"><span class="prompt">>>> </span><span class="output">GET /v1/audit/export</span></div>
+    <div class="term-line" data-delay="900"><span class="info">[AIR:compliance]</span> Evaluating 22 controls against live configuration...</div>
+    <div class="term-line" data-delay="1400"><span class="success">[SOC 2]</span>  CC6.1 Encryption at rest ......... <span class="success">PASS</span></div>
+    <div class="term-line" data-delay="1700"><span class="success">[SOC 2]</span>  CC7.2 Incident detection .......... <span class="success">PASS</span></div>
+    <div class="term-line" data-delay="2000"><span class="success">[ISO 27001]</span> A.12.4 Logging & monitoring ... <span class="success">PASS</span></div>
+    <div class="term-line" data-delay="2300"><span class="success">[ISO 27001]</span> A.18.1 Legal compliance ....... <span class="success">PASS</span></div>
+    <div class="term-line" data-delay="2700"><span class="info">[AIR:export]</span> Signed evidence package generated</div>
+    <div class="term-line" data-delay="3200"><span class="success">{"controls_passed": 22, "attestation": "hmac-sha256:9f8e7d...", "exportable": true}</span></div>
+  </div>
+  <div class="gap-md"></div>
+  <h3 style="font-size:1rem;">Hand it to your auditor as a single JSON document.</h3>
+</div>
+
+<!-- ═══════════════ SCENE 8 — VS OBSERVABILITY ═══════════════ -->
+<div class="scene" id="scene-8">
+  <h2>Observability vs <span class="gradient-text">Accountability</span></h2>
+  <div class="gap-sm"></div>
+  <h3>They answer "how is it performing?" — AIR answers "what happened, and can we prove it?"</h3>
+  <div class="gap-md"></div>
+  <table class="compare-table" id="compare-table">
+    <thead><tr class="visible"><th></th><th>Observability Tools</th><th style="color:var(--accent)">AIR Gateway</th></tr></thead>
+    <tbody>
+      <tr data-delay="300"><td>Data lives in</td><td>Their cloud</td><td style="color:var(--green)"><strong>Your vault</strong></td></tr>
+      <tr data-delay="600"><td>PII in traces</td><td style="color:var(--red)">Raw content exposed</td><td style="color:var(--green)">Vault refs only</td></tr>
+      <tr data-delay="900"><td>Tamper-evident</td><td style="color:var(--red)">No</td><td style="color:var(--green)">HMAC-SHA256 chain</td></tr>
+      <tr data-delay="1200"><td>Deterministic replay</td><td style="color:var(--red)">No</td><td style="color:var(--green)">replayctl</td></tr>
+      <tr data-delay="1500"><td>Compliance controls</td><td style="color:var(--red)">No</td><td style="color:var(--green)">22 (SOC 2 + ISO)</td></tr>
+      <tr data-delay="1800"><td>Agent guardrails</td><td style="color:var(--red)">No</td><td style="color:var(--green)">Cost, loop, PII, tool</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════ SCENE 9 — STATS ═══════════════ -->
+<div class="scene" id="scene-9">
+  <h2>By The Numbers</h2>
+  <div class="gap-lg"></div>
+  <div class="stats-grid">
+    <div class="stat-card" data-delay="200"><div class="stat-number gradient-text">200+</div><div class="stat-label">Tests Passing</div></div>
+    <div class="stat-card" data-delay="400"><div class="stat-number" style="color:var(--green)">8</div><div class="stat-label">LLM Providers</div></div>
+    <div class="stat-card" data-delay="600"><div class="stat-number" style="color:var(--orange)">22</div><div class="stat-label">Compliance Controls</div></div>
+    <div class="stat-card" data-delay="800"><div class="stat-number" style="color:var(--accent)">15</div><div class="stat-label">Repos</div></div>
+  </div>
+  <div class="gap-lg"></div>
+  <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); max-width:600px;">
+    <div class="stat-card" data-delay="1000"><div class="stat-number" style="color:var(--purple)">4</div><div class="stat-label">Privacy Modes</div></div>
+    <div class="stat-card" data-delay="1200"><div class="stat-number" style="color:var(--green)">0</div><div class="stat-label">Downtime Risk*</div></div>
+    <div class="stat-card" data-delay="1400"><div class="stat-number" style="color:var(--accent)">1</div><div class="stat-label">Line to Record</div></div>
+  </div>
+  <div class="gap-sm"></div>
+  <div style="color:var(--text-dim); font-size:0.7rem;">*Non-blocking proxy — vault failure never stops your AI.</div>
+</div>
+
+<!-- ═══════════════ SCENE 10 — ECOSYSTEM ═══════════════ -->
+<div class="scene" id="scene-10">
+  <h2>The <span class="gradient-text">AIR Blackbox</span> Ecosystem</h2>
+  <div class="gap-sm"></div>
+  <h3>15 repos. Every layer tested. Apache-2.0.</h3>
+  <div class="gap-lg"></div>
+  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr); max-width:900px;">
+    <div class="stat-card" data-delay="200" style="border-color:var(--accent)"><div style="font-size:1.6rem; margin-bottom:8px;">✈️</div><div class="stat-label">Gateway</div><div style="color:var(--accent); font-size:0.7rem; margin-top:4px;">This Repo</div></div>
+    <div class="stat-card" data-delay="400" style="border-color:var(--blue)"><div style="font-size:1.6rem; margin-bottom:8px;">🐍</div><div class="stat-label">Python SDK</div><div style="color:var(--blue); font-size:0.7rem; margin-top:4px;">OpenAI + more</div></div>
+    <div class="stat-card" data-delay="600" style="border-color:var(--green)"><div style="font-size:1.6rem; margin-bottom:8px;">🛡️</div><div class="stat-label">Trust Plugins</div><div style="color:var(--green); font-size:0.7rem; margin-top:4px;">4 frameworks</div></div>
+    <div class="stat-card" data-delay="800" style="border-color:var(--orange)"><div style="font-size:1.6rem; margin-bottom:8px;">📡</div><div class="stat-label">OTel Pipeline</div><div style="color:var(--orange); font-size:0.7rem; margin-top:4px;">3 processors</div></div>
+    <div class="stat-card" data-delay="1000" style="border-color:var(--purple)"><div style="font-size:1.6rem; margin-bottom:8px;">⚖️</div><div class="stat-label">Governance</div><div style="color:var(--purple); font-size:0.7rem; margin-top:4px;">5 repos</div></div>
+  </div>
+  <div class="gap-lg"></div>
+  <div class="code-block" style="max-width:500px; text-align:center;">
+    <div class="line visible" style="text-align:center; color: var(--text-dim);">pip install air-blackbox-sdk</div>
+    <div class="line visible" style="text-align:center; margin-top:4px;"><span style="color:var(--accent)">github.com/airblackbox</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENE 11 — CTA ═══════════════ -->
+<div class="scene" id="scene-11">
+  <div class="pill pill-accent" style="margin-bottom: 20px;">GET STARTED</div>
+  <h1><span class="gradient-text">Record Everything</span></h1>
+  <div class="gap-md"></div>
+  <h3 style="max-width:500px;">One import. Full audit trail. Zero blind spots.</h3>
+  <div class="gap-lg"></div>
+  <div class="code-block" style="max-width:520px;">
+    <div class="line visible"><span class="kw">from</span> openai <span class="kw">import</span> OpenAI</div>
+    <div class="line visible"><span class="kw">import</span> air</div>
+    <div class="line visible"></div>
+    <div class="line visible">client = air.<span class="fn">air_wrap</span>(<span class="cls">OpenAI</span>())</div>
+    <div class="line visible"><span class="cm"># Every decision is now recorded.</span></div>
+  </div>
+  <div class="gap-lg"></div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+    <span class="pill pill-accent" style="cursor:pointer; font-size:0.9rem; padding:10px 24px;">github.com/airblackbox</span>
+  </div>
+  <div class="gap-lg"></div>
+  <div style="color:var(--text-dim); font-size:0.8rem;">AIR Blackbox — Agent Infrastructure Runtime</div>
+</div>
+</div>
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" disabled>← Prev</button>
+  <span id="scene-counter">1 / 12</span>
+  <button class="nav-btn" id="next-btn">Next →</button>
+</div>
+
+<script>
+// ── Particles ──
+const particleContainer = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + 'vw';
+  p.style.top = Math.random() * 100 + 'vh';
+  p.style.animationDelay = Math.random() * 8 + 's';
+  p.style.animationDuration = (6 + Math.random() * 6) + 's';
+  const colors = ['var(--accent)', 'var(--red)', 'var(--orange)', 'var(--green)', 'var(--blue)'];
+  p.style.background = colors[Math.floor(Math.random() * colors.length)];
+  particleContainer.appendChild(p);
+}
+
+// ── Scene Management ──
+const totalScenes = 12;
+let current = 0;
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
+const counter = document.getElementById('scene-counter');
+const progressBar = document.getElementById('progress-bar');
+
+function updateNav() {
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === totalScenes - 1;
+  counter.textContent = `${current + 1} / ${totalScenes}`;
+  progressBar.style.width = ((current / (totalScenes - 1)) * 100) + '%';
+}
+
+function goToScene(n) {
+  if (n < 0 || n >= totalScenes) return;
+  const oldScene = document.getElementById('scene-' + current);
+  oldScene.classList.remove('active');
+  oldScene.classList.add('exit');
+  current = n;
+  const newScene = document.getElementById('scene-' + current);
+  setTimeout(() => {
+    oldScene.classList.remove('exit');
+    newScene.classList.add('active');
+    updateNav();
+    animateScene(current);
+  }, 200);
+}
+
+prevBtn.addEventListener('click', () => goToScene(current - 1));
+nextBtn.addEventListener('click', () => goToScene(current + 1));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goToScene(current + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goToScene(current - 1); }
+});
+
+// ── Animate Scene Elements ──
+function animateScene(sceneIndex) {
+  const scene = document.getElementById('scene-' + sceneIndex);
+
+  scene.querySelectorAll('.code-block .line').forEach(line => {
+    const delay = parseInt(line.dataset.delay || 0);
+    setTimeout(() => line.classList.add('visible'), delay);
+  });
+
+  scene.querySelectorAll('.stat-card').forEach(card => {
+    const delay = parseInt(card.dataset.delay || 0);
+    setTimeout(() => card.classList.add('visible'), delay);
+  });
+
+  scene.querySelectorAll('.flow-node').forEach(node => {
+    const delay = parseInt(node.dataset.delay || 0);
+    setTimeout(() => node.classList.add('visible'), delay);
+  });
+  scene.querySelectorAll('.flow-arrow').forEach(arrow => {
+    const delay = parseInt(arrow.dataset.delay || 0);
+    setTimeout(() => arrow.classList.add('visible'), delay);
+  });
+
+  scene.querySelectorAll('.term-line').forEach(line => {
+    const delay = parseInt(line.dataset.delay || 0);
+    setTimeout(() => line.classList.add('visible'), delay);
+  });
+
+  scene.querySelectorAll('.compare-table tbody tr').forEach(row => {
+    const delay = parseInt(row.dataset.delay || 0);
+    setTimeout(() => row.classList.add('visible'), delay);
+  });
+
+  scene.querySelectorAll('.chain-block').forEach(block => {
+    const delay = parseInt(block.dataset.delay || 0);
+    setTimeout(() => block.classList.add('visible'), delay);
+  });
+  scene.querySelectorAll('.chain-link').forEach(link => {
+    const delay = parseInt(link.dataset.delay || 0);
+    setTimeout(() => link.classList.add('visible'), delay);
+  });
+
+  if (sceneIndex === 5) animateChainVerify();
+}
+
+// ── Chain Verify Animation ──
+function animateChainVerify() {
+  const blocks = document.querySelectorAll('#chain-blocks .chain-block');
+  setTimeout(() => {
+    blocks.forEach((b, i) => {
+      setTimeout(() => b.classList.add('verified'), i * 200);
+    });
+  }, 3200);
+  setTimeout(() => {
+    blocks[blocks.length - 1].classList.remove('verified');
+    blocks[blocks.length - 1].classList.add('tampered');
+  }, 5000);
+}
+
+// Initial state
+updateNav();
+animateScene(0);
+</script>
+</body>
+</html>

@@ -281,4 +281,4 @@ Apache-2.0. The open-source protocol layer will always be Apache-2.0.
 
 The path to adoption: **Open protocol → common dependency → operational expectation → compliance requirement.**
 
-See [LICENSE](LICENSE) for details. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for future commercial governance services.
+See [LICENSE](LICENSE) for details. See [Commercial Addendum](docs/COMMERCIAL_ADDENDUM.md) for future commercial governance services.

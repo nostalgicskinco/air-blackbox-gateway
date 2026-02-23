@@ -1,0 +1,2 @@
+# Tell GitHub linguist to ignore HTML demo files for language detection
+*.html linguist-documentation

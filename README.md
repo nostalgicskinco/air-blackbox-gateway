@@ -4,7 +4,7 @@
 [![Go 1.22+](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-enabled-blueviolet?logo=opentelemetry)](https://opentelemetry.io)
-[![Python SDK](https://img.shields.io/badge/SDK-Python-3776AB?logo=python&logoColor=white)](https://github.com/airblackbox/sdk-python)
+[![Python SDK](https://img.shields.io/badge/SDK-Python-3776AB?logo=python&logoColor=white)](https://github.com/airblackbox/python-sdk)
 
 > **[View Interactive Demo](https://htmlpreview.github.io/?https://github.com/airblackbox/gateway/blob/main/demo.html)** — Walk through every feature with animated examples.
 
@@ -24,9 +24,9 @@ client = air.air_wrap(OpenAI())
 
 15 repos. 200+ tests. CI on every push. Apache-2.0.
 
-> **See it live:** [Interactive Demo](https://airblackbox.github.io/air-blackbox-gateway/air-demo.html) — watch an agent run, inspect the audit chain, tamper with a record, and see the chain break.
+> **See it live:** [Interactive Demo](https://airblackbox.github.io/gateway/air-demo.html) — watch an agent run, inspect the audit chain, tamper with a record, and see the chain break.
 >
-> Also: [Test Suite](https://airblackbox.github.io/air-blackbox-gateway/test-suite-demo.html) — 30 tests across 8 LLM providers.
+> Also: [Test Suite](https://airblackbox.github.io/gateway/test-suite-demo.html) — 30 tests across 8 LLM providers.
 
 ---
 
@@ -36,7 +36,7 @@ client = air.air_wrap(OpenAI())
 
 ```bash
 git clone https://github.com/airblackbox/gateway.git
-cd air-blackbox-gateway
+cd gateway
 cp .env.example .env   # add your OPENAI_API_KEY
 docker compose up --build
 ```
@@ -186,8 +186,8 @@ You control all data. You choose what gets recorded.
 
 | Layer | Repos | What It Does |
 |---|---|---|
-| **Gateway** | `air-blackbox-gateway` (this repo) | Proxy + vault + AIR records + guardrails + trust |
-| **SDK** | [`air-sdk-python`](https://github.com/airblackbox/sdk-python) | Python integrations — OpenAI, LangChain, CrewAI |
+| **Gateway** | `gateway` (this repo) | Proxy + vault + AIR records + guardrails + trust |
+| **SDK** | [`python-sdk`](https://github.com/airblackbox/python-sdk) | Python integrations — OpenAI, LangChain, CrewAI |
 | **Episode Ledger** | [`agent-episode-store`](https://github.com/airblackbox/agent-episode-store) | Groups AIR records into replayable task-level episodes |
 | **Eval Harness** | [`eval-harness`](https://github.com/airblackbox/eval-harness) | Replays episodes, scores results, detects regressions |
 | **Policy Engine** | [`agent-policy-engine`](https://github.com/airblackbox/agent-policy-engine) | Risk-tiered autonomy, runtime enforcement |

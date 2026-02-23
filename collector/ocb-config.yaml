@@ -24,14 +24,14 @@ processors:
 
   # --- AIR custom processors ---
   # gomod = root module (matches go.mod), import = sub-package with NewFactory()
-  - gomod: github.com/nostalgicskinco/genai-semantic-normalizer v0.1.0
-    import: github.com/nostalgicskinco/genai-semantic-normalizer/processor/genainormprocessor
+  - gomod: github.com/airblackbox/otel-semantic-normalizer v0.1.0
+    import: github.com/airblackbox/otel-semantic-normalizer/processor/genainormprocessor
 
-  - gomod: github.com/nostalgicskinco/prompt-vault-processor v0.1.0
-    import: github.com/nostalgicskinco/prompt-vault-processor/processor/promptvaultprocessor
+  - gomod: github.com/airblackbox/otel-prompt-vault v0.1.0
+    import: github.com/airblackbox/otel-prompt-vault/processor/promptvaultprocessor
 
-  - gomod: github.com/nostalgicskinco/opentelemetry-collector-processor-genai v0.1.0
-    import: github.com/nostalgicskinco/opentelemetry-collector-processor-genai/processor/genaisafeprocessor
+  - gomod: github.com/airblackbox/otel-collector-genai v0.1.0
+    import: github.com/airblackbox/otel-collector-genai/processor/genaisafeprocessor
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.104.0

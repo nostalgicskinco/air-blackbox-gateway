@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
+	"github.com/airblackbox/gateway/pkg/recorder"
 )
 
 func TestHealthEndpoint(t *testing.T) {

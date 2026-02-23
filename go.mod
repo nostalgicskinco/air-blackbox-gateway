@@ -1,4 +1,4 @@
-module github.com/nostalgicskinco/air-blackbox-gateway
+module github.com/airblackbox/gateway
 
 go 1.22.0
 

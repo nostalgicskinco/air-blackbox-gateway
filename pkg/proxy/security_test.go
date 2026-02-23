@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
-	"github.com/nostalgicskinco/air-blackbox-gateway/testdata"
+	"github.com/airblackbox/gateway/pkg/recorder"
+	"github.com/airblackbox/gateway/testdata"
 )
 
 // TestSecurity_NoPlaintextInAIRRecords verifies that AIR records contain

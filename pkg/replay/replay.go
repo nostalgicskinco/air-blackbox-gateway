@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/vault"
+	"github.com/airblackbox/gateway/pkg/recorder"
+	"github.com/airblackbox/gateway/pkg/vault"
 )
 
 // Result holds the outcome of a replay.

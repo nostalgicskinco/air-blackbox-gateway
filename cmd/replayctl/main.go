@@ -9,9 +9,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/recorder"
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/replay"
-	"github.com/nostalgicskinco/air-blackbox-gateway/pkg/vault"
+	"github.com/airblackbox/gateway/pkg/recorder"
+	"github.com/airblackbox/gateway/pkg/replay"
+	"github.com/airblackbox/gateway/pkg/vault"
 )
 
 func main() {

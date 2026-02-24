@@ -6,6 +6,12 @@
 > and care about audit trails, we'd love your input — [open an issue](https://github.com/airblackbox/gateway/issues) or start a [discussion](https://github.com/airblackbox/gateway/discussions).
 
 
+> **Project Status: Alpha (launched February 2026)**
+> AIR Blackbox is an early-stage project actively seeking feedback and contributors.
+> The architecture is stable, the APIs may evolve. If you're deploying AI agents
+> and care about audit trails, we'd love your input — [open an issue](https://github.com/airblackbox/gateway/issues) or start a [discussion](https://github.com/airblackbox/gateway/discussions).
+
+
 [![CI](https://github.com/airblackbox/gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/airblackbox/gateway/actions/workflows/ci.yml)
 [![Go 1.22+](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)

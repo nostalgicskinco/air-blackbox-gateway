@@ -1,5 +1,11 @@
 # AIR Blackbox Gateway
 
+> **Project Status: Alpha (launched February 2026)**
+> AIR Blackbox is an early-stage project actively seeking feedback and contributors.
+> The architecture is stable, the APIs may evolve. If you're deploying AI agents
+> and care about audit trails, we'd love your input — [open an issue](https://github.com/airblackbox/gateway/issues) or start a [discussion](https://github.com/airblackbox/gateway/discussions).
+
+
 [![CI](https://github.com/airblackbox/gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/airblackbox/gateway/actions/workflows/ci.yml)
 [![Go 1.22+](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
@@ -103,7 +109,7 @@ AIR answers **"what exactly happened, and can we prove it?"**
 | Signed evidence export | ❌ | ✅ HMAC-attested packages |
 | Agent guardrails | ❌ | ✅ Cost, loop, tool, PII |
 
-Nobody else ships tamper-evident audit chains for AI systems as open source. Not Langfuse (6k+ stars), not Helicone, not LangSmith. They're observability. This is accountability.
+AIR Blackbox provides tamper-evident audit chains for AI systems — an approach inspired by certificate transparency logs, applied to agent infrastructure. Not Langfuse (6k+ stars), not Helicone, not LangSmith. They're observability. This is accountability.
 
 ---
 
@@ -111,7 +117,7 @@ Nobody else ships tamper-evident audit chains for AI systems as open source. Not
 
 **Platform engineers** deploying agents that call LLMs. You need every request recorded without leaking PII into your observability stack. Drop this in front of your provider — zero code changes.
 
-**Compliance teams** whose regulators are asking *"show me what the AI did."* AIR records give you legal-grade reconstruction with SHA-256 checksums and signed evidence packages.
+**Compliance teams** whose regulators are asking *"show me what the AI did."* AIR records give you structured reconstruction with SHA-256 checksums and signed evidence packages.
 
 **Startup CTOs** who know *"we can't prove what our AI did"* will block enterprise deals, SOC 2, or insurance. Install this now so you're not scrambling later.
 
